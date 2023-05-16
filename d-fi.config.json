@@ -1,0 +1,31 @@
+{
+  "concurrency": 4,
+  "saveLayout": {
+    "track": "Music/{ALB_TITLE}/{SNG_TITLE}",
+    "album": "Music/{ALB_TITLE}/{SNG_TITLE}",
+    "artist": "Music/{ALB_TITLE}/{SNG_TITLE}",
+    "playlist": "Playlist/{TITLE}/{SNG_TITLE}",
+    "qobuz-album": "Music/{performer.name}/{album.title}/{title}",
+    "qobuz-track": "Music/{performer.name}/{title}",
+    "qobuz-artist": "Music/{performer.name}/{album.title}/{title}"
+  },
+  "playlist": {
+    "resolveFullPath": false
+  },
+  "trackNumber": true,
+  "fallbackTrack": true,
+  "fallbackQuality": true,
+  "coverSize": {
+    "128": 500,
+    "320": 500,
+    "flac": 1000
+  },
+  "cookies": {
+    "arl": ""
+  },
+  "qobuz": {
+    "app_id": 814460817,
+    "secrets": "10b251c286cfbf64d6b7105f253d9a2e,979549437fcc4a3faad4867b5cd25dcb",
+    "token": "9WtCjUyV8CAsLSybfy_GFr_hyDW0OQEoCjsuUMkl8-vQV-18aK-KM6V_X_ihBGVFHQH9RhzHW_I7LWNzQgMVcw"
+  }
+}
