@@ -5,4 +5,4 @@ Discover BeatOn, the ultimate GUI for D-Fi designed to enrich your Download expe
 ![Downloads](./Downloads.jpg)
 ![Featured](./Featured.png)
 ![Genre](./Genre.png)
-![Settings](./Settings.png)
+![Settings](./Settings.jpg)
