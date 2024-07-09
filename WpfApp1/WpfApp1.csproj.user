@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_LastSelectedProfileId>C:\Users\J-PLEX SERVER\source\repos\WpfApp1\Properties\PublishProfiles\FolderProfile3.pubxml</_LastSelectedProfileId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ApplicationDefinition Update="App.xaml">
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="DownloadManagerControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="DownloadManagerWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="FormatOptionsPopup.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="OutputWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Qobuz_FormatOptionsPopup.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="SettingsWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="DownloadManagerControl.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="DownloadManagerWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="FormatOptionsPopup.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="OutputWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Qobuz_FormatOptionsPopup.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SettingsWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+</Project>

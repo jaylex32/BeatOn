@@ -1,0 +1,247 @@
+﻿<Window x:Class="WpfApp1.DownloadManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Downloads" Height="700" Width="900"
+        Closing="Window_Closing">
+    <Window.Resources>
+        <DropShadowEffect x:Key="DropShadowEffectStyle" Color="#FF404040" Direction="0" BlurRadius="5" Opacity="0.3"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <!-- Modern Cancel Button Style -->
+        <Style x:Key="FlatActionButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#FF606060"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF787878"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#FF505050"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CancelTabButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#FFD32F2F"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="12"/>
+            <!-- Increased font size -->
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="0,0,0,0"/>
+            <!-- Add padding to increase size and centralize content -->
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="15"/>
+            <!-- Specify width -->
+            <Setter Property="Height" Value="15"/>
+            <!-- Specify height -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="5">
+                            <!-- Increased corner radius for a rounder appearance -->
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFE57373"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFB71C1C"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="TabButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#FF606060"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="#FF808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="4"
+                        Effect="{StaticResource DropShadowEffectStyle}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#FF787878"/>
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#FF9A9A9A"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#FF505050"/>
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#FF707070"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Style for DataGrid -->
+        <Style TargetType="{x:Type DataGrid}">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="WhiteSmoke"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="RowBackground" Value="#444444"/>
+            <Setter Property="AlternatingRowBackground" Value="#373737"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+        </Style>
+
+        <!-- Style for DataGrid Headers -->
+        <Style TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+
+        <!-- Style for DataGrid Rows -->
+        <Style TargetType="{x:Type DataGridRow}">
+            <Setter Property="Foreground" Value="WhiteSmoke"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#555555"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#505050"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style for DataGrid Cells -->
+        <Style TargetType="{x:Type DataGridCell}">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="WhiteSmoke"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+       
+        <!-- Updated DataGridTextColumnStyle with padding -->
+        <Style x:Key="DataGridTextColumnStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="5,0"/>
+            <!-- Added padding -->
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <!-- Style for TextBox in editing mode -->
+        <Style x:Key="DataGridTextColumnEditingStyle" TargetType="TextBox">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="5,0"/>
+            <!-- Added padding -->
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="#FF333333">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Label Content="Downloads" Foreground="White" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,10,0,10" FontFamily="Segoe UI"/>
+        <Border Margin="10" Grid.Row="1" Background="White"  BorderBrush="Gray"  BorderThickness="1" CornerRadius="10" Padding="2">
+          <DataGrid Name="DownloadDataGrid" Margin="10" Grid.Row="1" ItemsSource="{Binding DownloadItems}" AutoGenerateColumns="False" IsReadOnly="True" Loaded="DataGrid_Loaded">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}"
+                            ElementStyle="{StaticResource DataGridTextColumnStyle}"
+                            EditingElementStyle="{StaticResource DataGridTextColumnEditingStyle}"
+                            MinWidth="200" Width="Auto"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}"
+                            ElementStyle="{StaticResource DataGridTextColumnStyle}"
+                            EditingElementStyle="{StaticResource DataGridTextColumnStyle}" MinWidth="80" Width="Auto"/>
+                <DataGridTextColumn Header="Start Time" Binding="{Binding StartTime}"
+                            ElementStyle="{StaticResource DataGridTextColumnStyle}"
+                            EditingElementStyle="{StaticResource DataGridTextColumnStyle}" MinWidth="150" Width="Auto"/>
+                <DataGridTextColumn Header="End Time" Binding="{Binding EndTime}"
+                            ElementStyle="{StaticResource DataGridTextColumnStyle}"
+                            EditingElementStyle="{StaticResource DataGridTextColumnStyle}" MinWidth="70" Width="Auto"/>
+                <DataGridTextColumn Header="Error Message" Binding="{Binding ErrorMessage}"
+                            ElementStyle="{StaticResource DataGridTextColumnStyle}"
+                            EditingElementStyle="{StaticResource DataGridTextColumnStyle}" MinWidth="90" Width="2*"/>
+                <DataGridTemplateColumn Header="Actions" MinWidth="80" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="X" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Click="CancelButton_Click" DataContext="{Binding}" Style="{StaticResource CancelTabButtonStyle}" Margin="30,2,2,2"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+            <DataGrid.RowDetailsTemplate>
+                <DataTemplate>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Auto" 
+                      MaxHeight="800">
+                        <!-- Set a maximum height -->
+                        <TextBox Text="{Binding Log}" 
+                     Background="Black" 
+                     Foreground="White" 
+                     TextWrapping="Wrap" 
+                     IsReadOnly="True" 
+                     BorderThickness="0"/>
+                    </ScrollViewer>
+                </DataTemplate>
+            </DataGrid.RowDetailsTemplate>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <EventSetter Event="MouseLeftButtonUp" Handler="DataGridRow_MouseLeftButtonUp"/>
+                    <Setter Property="DetailsVisibility" Value="{Binding IsDetailsVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                </Style>
+            </DataGrid.RowStyle>
+        </DataGrid>
+        </Border>
+        <Button Content="Clear" Style="{StaticResource FlatActionButton}" Height="35" Width="100" Margin="10,0,10,10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="ClearButton_Click" Grid.Row="2"/>
+        <Button Content="Path" Style="{StaticResource FlatActionButton}"  Height="35" Width="100" Margin="10,0,120,10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OpenPathButton_Click" Grid.Row="2"/>
+    </Grid>
+</Window>

@@ -1,0 +1,1658 @@
+﻿<Window
+    x:Class="WpfApp1.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+    xmlns:local="clr-namespace:WpfApp1"
+    Title="BeatOn"
+    Height="760" Width="1100"
+    MinWidth="800"
+    MinHeight="660"
+    UseLayoutRounding="True"
+    WindowState="Normal"
+    WindowStyle="ThreeDBorderWindow">
+    <Window.Resources>
+        
+        <DropShadowEffect
+            x:Key="DropShadowEffectStyle"
+            BlurRadius="5"
+            Direction="0"
+            Opacity="0.3"
+            Color="#FF404040" />
+        <ItemsPanelTemplate x:Key="AlbumsPanelTemplate">
+            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+        </ItemsPanelTemplate>
+        
+        <Style x:Key="CustomContextMenuStyle" TargetType="ContextMenu">
+            <Setter Property="Background" Value="Black" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="Gray" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <StackPanel IsItemsHost="True" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+       
+        <Style x:Key="CustomContextMenuItemStyle" TargetType="{x:Type MenuItem}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type MenuItem}">
+                        <Border
+                            x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4">
+                            <ContentPresenter Margin="20,2,0,2" ContentSource="Header" />
+                        </Border>
+                        <!--  Triggers for visual changes like highlighting on mouse over  -->
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <!--  Ensure that the Border has the name "Bd"  -->
+                                <Setter TargetName="Bd" Property="Background" Value="#E5E5E5" />
+                                <Setter Property="Foreground" Value="Black" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+       
+        <ContextMenu x:Key="DownloadContextMenu" Style="{StaticResource CustomContextMenuStyle}">
+            <MenuItem
+                Width="100"
+                Click="ContextMenuDownload_Click"
+                FontWeight="SemiBold"
+                Header="Download"
+                Style="{StaticResource CustomContextMenuItemStyle}">
+                <MenuItem.Icon>
+                    <Image
+                        Width="16"
+                        Height="16"
+                        Source="pack://application:,,,/filedownload.png" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem
+                Width="100"
+                Click="ContextMenuLink_Click"
+                FontWeight="SemiBold"
+                Header="Url"
+                Style="{StaticResource CustomContextMenuItemStyle}">
+                <MenuItem.Icon>
+                    <Image
+                        Width="14"
+                        Height="14"
+                        Source="pack://application:,,,/URL.png" />
+                </MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+       
+        <MenuItem
+            x:Key="TopTracksMenuItem"
+            Width="100"
+            Click="ArtistTopTracks_Click"
+            FontWeight="SemiBold"
+            Header="Top Tracks"
+            Style="{StaticResource CustomContextMenuItemStyle}">
+            <!--  Icon or other properties  -->
+        </MenuItem>
+        <MenuItem
+            x:Key="similarArtistsMenuItem"
+            Width="100"
+            Click="SimilarArtists_Click"
+            FontWeight="SemiBold"
+            Header="Similar Artists"
+            Style="{StaticResource CustomContextMenuItemStyle}">
+            <!--  Icon or other properties  -->
+        </MenuItem>
+        <MenuItem
+            x:Key="ArtistRadioItem"
+            Width="100"
+            Click="ArtistRadio_Click"
+            FontWeight="SemiBold"
+            Header="Artist Radio"
+            Style="{StaticResource CustomContextMenuItemStyle}">
+            <!--  Icon or other properties  -->
+        </MenuItem>
+       
+        <Style x:Key="ModernFlatTextBox" TargetType="{x:Type TextBox}">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="#FF333333" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#FFCCCCCC" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="25,5,10,5" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TextBox}">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3">
+                            <ScrollViewer x:Name="PART_ContentHost" Padding="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#FF7DA7D9" />
+                                <!--  Highlight color when focused  -->
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FlatActionButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#FF606060" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF787878" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="White" />
+                                <Setter Property="Foreground" Value="Black" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+       
+        <Style x:Key="DownloadFlatActionButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#FF606060" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Path x:Name="Icon" Data="M7.999 1C7.447 1 7 1.447 7 2V10.586L4.707 8.293C4.316 7.902 3.683 7.902 3.293 8.293C2.902 8.683 2.902 9.316 3.293 9.707L7.293 13.707C7.488 13.902 7.744 14 8 14C8.256 14 8.512 13.902 8.707 13.707L12.707 9.707C13.098 9.316 13.098 8.683 12.707 8.293C12.316 7.902 11.683 7.902 11.293 8.293L9 10.586V2C9 1.447 8.553 1 8 1ZM1 14C0.447 14 0 14.447 0 15C0 15.553 0.447 16 1 16H15C15.553 16 16 15.553 16 15C16 14.447 15.553 14 15 14H1Z" Fill="White" Width="16" Height="16" />
+                                <TextBlock x:Name="ButtonText" Text="{TemplateBinding Content}" Margin="5,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF787878" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="White" />
+                                <Setter Property="Foreground" Value="Black" />
+                                <Setter TargetName="Icon" Property="Fill" Value="Black" />
+                                <Setter TargetName="ButtonText" Property="Foreground" Value="Black" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    
+        <Style x:Key="PreviewFlatActionButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#FF606060" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Path x:Name="Icon" Data="M5 3.5L14.5 8L5 12.5V3.5Z" Fill="White" Width="16" Height="16" />
+                                <TextBlock x:Name="ButtonText" Text="{TemplateBinding Content}" Margin="5,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF787878" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="White" />
+                                <Setter Property="Foreground" Value="Black" />
+                                <Setter TargetName="Icon" Property="Fill" Value="Black" />
+                                <Setter TargetName="ButtonText" Property="Foreground" Value="Black" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="styleTabControlDefault" TargetType="{x:Type TabControl}">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TabControl}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Tab Panel for Headers  -->
+                            <TabPanel
+                                Grid.Row="0"
+                                Panel.ZIndex="1"
+                                Background="Transparent"
+                                IsItemsHost="True" />
+
+                            <!--  Content Area  -->
+                            <Border
+                                Grid.Row="1"
+                                Background="White"
+                                BorderBrush="#606060"
+                                BorderThickness="1"
+                                CornerRadius="3">
+                                <!--  Rounded corners applied here  -->
+                                <ContentPresenter ContentSource="SelectedContent" />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="substyleTabControlDefault" TargetType="{x:Type TabControl}">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TabControl}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!--  Tab Panel for Headers  -->
+                            <TabPanel
+                                Grid.Row="0"
+                                Panel.ZIndex="1"
+                                Background="Transparent"
+                                IsItemsHost="True" />
+
+                            <!--  Content Area  -->
+                            <Border
+                                Grid.Row="1"
+                                Background="Black"
+                                BorderBrush="#606060"
+                                BorderThickness="1"
+                                CornerRadius="3">
+                                <!--  Rounded corners applied here  -->
+                                <ContentPresenter ContentSource="SelectedContent" />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="styleListBoxDefault" TargetType="{x:Type ListBox}">
+            <Setter Property="BorderBrush" Value="#606060" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBox}">
+                        <Border
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3">
+                            <!--  Rounded corners applied here  -->
+                            <ScrollViewer Padding="{TemplateBinding Padding}">
+                                <ItemsPresenter />
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="styleListBoxItem" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border
+                            x:Name="Bd"
+                            Padding="2"
+                            Background="{TemplateBinding Background}"
+                            SnapsToDevicePixels="true">
+                            <ContentPresenter
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#E5E5E5" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#D3D3D3" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#ADADAD" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+       
+        
+        <Style x:Key="ModernSearchButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#FF5B5B5B" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#7F808080" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#7F838387" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>        
+        
+      
+        <Style x:Key="SearchBoxStyle" TargetType="{x:Type TextBox}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TextBox}">
+                        <Border
+                            BorderBrush="Black"
+                            BorderThickness="1"
+                            CornerRadius="5">
+                            <Grid>
+                                <TextBox
+                                    Padding="5"
+                                    Background="White"
+                                    BorderThickness="0"
+                                    Text="{TemplateBinding Text}" />
+                                <Button
+                                    Width="30"
+                                    Margin="0,2,5,2"
+                                    HorizontalAlignment="Right"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    Content="🔍"
+                                    Cursor="Hand" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+      
+        <LinearGradientBrush x:Key="gradientBrushSegmentedTabItem" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Offset="0" Color="#FF9E9E9E" />
+            <GradientStop Offset="1" Color="#FF151515" />
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="gradientBrushSegmentedActiveTabItem" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Offset="0" Color="#FF2B2B2B" />
+            <GradientStop Offset="1" Color="#FF1B1A19" />
+        </LinearGradientBrush>
+        <Style x:Key="styleTabItemDefault" TargetType="{x:Type TabItem}">
+            <Setter Property="Foreground" Value="#757575" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TabItem}">
+                        <Grid>
+                            <Border
+                                x:Name="border"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="0,0,0,3"
+                                CornerRadius="3">
+                                <!--  Rounded corners added here  -->
+                                <ContentPresenter
+                                    x:Name="contentPresenter"
+                                    Margin="10,3,10,3"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    ContentSource="Header" />
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E5E5E5" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFFFF" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="#606060" />
+                                <Setter Property="Foreground" Value="#303030" />
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#BDBDBD" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="TabButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#FF606060" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="BorderBrush" Value="#FF808080" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            Effect="{StaticResource DropShadowEffectStyle}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#FF787878" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#FF9A9A9A" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#FF707070" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="White" />
+                                <Setter Property="Foreground" Value="Black" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="TabButtonStyle2" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="Black" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="BorderBrush" Value="#FF808080" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border
+                            x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            Effect="{StaticResource DropShadowEffectStyle}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#FF787878" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#FF9A9A9A" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#FF707070" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="White" />
+                                <Setter Property="Foreground" Value="Black" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="{x:Type ToggleButton}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="20" />
+                </Grid.ColumnDefinitions>
+                <Border
+                    x:Name="Border"
+                    Grid.ColumnSpan="2"
+                    Background="#FF2B2B2B"
+                    BorderThickness="1"
+                    CornerRadius="5" />
+                <Border
+                    Grid.Column="0"
+                    Margin="1"
+                    Background="#FF1B1A19"
+                    BorderThickness="0,0,1,0"
+                    CornerRadius="5,0,0,5" />
+                <Path
+                    x:Name="Arrow"
+                    Grid.Column="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Data="M 0 0 L 4 4 L 8 0 Z"
+                    Fill="White" />
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="ToggleButton.IsMouseOver" Value="True">
+                    <Setter TargetName="Border" Property="Background" Value="#FF1B1A19" />
+                </Trigger>
+                <Trigger Property="ToggleButton.IsChecked" Value="True">
+                    <Setter TargetName="Border" Property="Background" Value="#FF1B1A19" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style x:Key="ComboBoxStyle1" TargetType="{x:Type ComboBox}">
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+            <Setter Property="MinWidth" Value="120" />
+            <Setter Property="MinHeight" Value="20" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid>
+                            <ToggleButton
+                                Name="ToggleButton"
+                                Grid.Column="2"
+                                ClickMode="Press"
+                                Focusable="False"
+                                IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                Template="{StaticResource ComboBoxToggleButton}" />
+                            <ContentPresenter
+                                Name="ContentSite"
+                                Margin="3,3,23,3"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                IsHitTestVisible="False" />
+                            <TextBox
+                                x:Name="PART_EditableTextBox"
+                                Margin="3,3,23,3"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                Focusable="True"
+                                IsReadOnly="{TemplateBinding IsReadOnly}"
+                                Style="{x:Null}"
+                                Visibility="Hidden" />
+                            <Popup
+                                Name="Popup"
+                                AllowsTransparency="True"
+                                Focusable="False"
+                                IsOpen="{TemplateBinding IsDropDownOpen}"
+                                Placement="Bottom"
+                                PopupAnimation="Slide">
+                                <Grid
+                                    Name="DropDown"
+                                    MinWidth="{TemplateBinding ActualWidth}"
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                    SnapsToDevicePixels="True">
+                                    <Border x:Name="DropDownBorder" Background="#FF2B2B2B" />
+                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="DropDownBorder" Property="MinHeight" Value="95" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#FFABADB3" />
+                            </Trigger>
+                            <Trigger Property="IsGrouping" Value="True">
+                                <Setter Property="ScrollViewer.CanContentScroll" Value="False" />
+                            </Trigger>
+                            <Trigger SourceName="Popup" Property="Popup.AllowsTransparency" Value="True">
+                                <Setter TargetName="DropDownBorder" Property="CornerRadius" Value="4" />
+                                <Setter TargetName="DropDownBorder" Property="Margin" Value="0,2,0,0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Background="Black">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Grid Grid.Column="0" Background="#FF404040">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- BeatOn Banner -->
+            <Image
+                Margin="0,-10,0,66"
+                MaxHeight="150"
+                RenderOptions.BitmapScalingMode="HighQuality"
+                Source="/BeatOn_Banner-removebg.png" />
+
+            <!-- Album Cover Image -->
+            <Border Grid.Row="1"
+                Width="180"
+                Height="180"
+                Margin="10,5"
+                Background="#FF444444"
+                BorderBrush="White"
+                BorderThickness="2"
+                CornerRadius="5">
+                <Image x:Name="Albums_Covers"
+                   Source="/album_coverholder.png"
+                   Stretch="Uniform" />
+            </Border>
+
+            <!-- Label for Album Title -->
+            <Label x:Name="Poster_Label"
+               Grid.Row="2"
+               Margin="5,5"
+               FontSize="14"
+               FontWeight="Bold"
+               Foreground="White">
+                <Label.Content>
+                    <AccessText Text="{Binding Path=result.Qposterlabel}" TextWrapping="Wrap" />
+                </Label.Content>
+            </Label>
+
+            <!-- Spacer -->
+            <Grid Grid.Row="3" />
+
+            <!-- Settings Button -->
+            <Button Name="SettingsButton"
+                Grid.Row="4"
+                Width="48"
+                Height="48"
+                Margin="0,0,0,15"
+                HorizontalAlignment="Center"
+                Click="SettingsButton_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Ellipse Fill="{TemplateBinding Background}" />
+                            <Image Width="42"
+                               Height="42"
+                               Source="/settings.png"
+                               Stretch="Uniform" />
+                        </Grid>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+        <!--  Tab Control  -->
+        <TabControl
+            Name="MainTabControl"
+            Grid.Column="1"
+            Margin="10,107,10,10"
+            Background="#FF121212"
+            SelectionChanged="MainTabControl_SelectionChanged"
+            Style="{StaticResource styleTabControlDefault}">
+            <!--  Deezer Tab  -->
+            <TabItem
+                Name="Deezer_TabItem"
+                Header="Deezer"
+                Style="{StaticResource styleTabItemDefault}">
+                <TabControl
+                    Name="DeezerTabTabControl"
+                    Background="Black"
+                    Style="{StaticResource substyleTabControlDefault}">
+                    <TabItem
+                        x:Name="Artist_TabItem"
+                        Header="Artists"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <ListBox
+                                x:Name="Deezer_Artist_Listbox"
+                                Grid.Row="0"
+                                ContextMenuOpening="Deezer_Artist_Listbox_ContextMenuOpening"
+                                ItemsSource="{Binding artistList}"
+                                MouseDoubleClick="Deezer_Artists_Listbox_MouseDoubleClick"
+                                SelectionChanged="Deezer_Artist_Listbox_SelectionChanged"
+                                SelectionMode="Single"
+                                Style="{StaticResource styleListBoxDefault}">
+                                <ListBox.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource styleListBoxItem}" TargetType="ListBoxItem">
+                                        <!--  Additional style settings here  -->
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Width="Auto" Text="{Binding Albums}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button
+                             Grid.Row="1"
+                             Width="100"
+                             Height="35"
+                             Margin="0,8,8,8"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Bottom"
+                             Click="DownloadButton_Click"
+                             Content="Download"
+                             Style="{StaticResource DownloadFlatActionButton}" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem
+                        x:Name="Albums_TabItem"
+                        Header="Album"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ListBox
+                                x:Name="Deezer_Albums_Listbox"
+                                ItemsSource="{Binding albumsList}"
+                                MouseDoubleClick="Deezer_Albums_Listbox_MouseDoubleClick"
+                                SelectionChanged="Deezer_Albums_Listbox_SelectionChanged"
+                                SelectionMode="Extended"
+                                Style="{StaticResource styleListBoxDefault}">
+                                <ListBox.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource styleListBoxItem}" TargetType="ListBoxItem">
+                                        <Setter Property="ContextMenu" Value="{StaticResource DownloadContextMenu}" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Width="Auto" Text="{Binding Albums}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button
+                             Grid.Row="1"
+                             Width="100"
+                             Height="35"
+                             Margin="0,8,8,8"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Bottom"
+                             Click="DownloadButton_Click"
+                             Content="Download"
+                             Style="{StaticResource DownloadFlatActionButton}" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem
+                        x:Name="Songs_TabItem"
+                        Header="Track"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ListBox
+                                x:Name="Deezer_Songs_Listbox"
+                                ItemsSource="{Binding songsList}"
+                                MouseDoubleClick="SongItem_DoubleClick"
+                                SelectionChanged="Deezer_Songs_Listbox_SelectionChanged"
+                                SelectionMode="Single"
+                                Style="{StaticResource styleListBoxDefault}">
+                                <ListBox.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource styleListBoxItem}" TargetType="ListBoxItem">
+                                        <Setter Property="ContextMenu" Value="{StaticResource DownloadContextMenu}" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Width="Auto" Text="{Binding Albums}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button
+                             Grid.Row="1"
+                             Width="100"
+                             Height="35"
+                             Margin="0,8,120,8"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Bottom"
+                             Click="SongsPreview_Click"
+                             Content="Preview"
+                             Style="{StaticResource PreviewFlatActionButton}" />
+                            
+                            <Button
+                             Grid.Row="1"
+                             Width="100"
+                             Height="35"
+                             Margin="0,8,8,8"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Bottom"
+                             Click="DownloadButton_Click"
+                             Content="Download"
+                             Style="{StaticResource DownloadFlatActionButton}" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem
+                        x:Name="Playlist_TabItem"
+                        Header="Playlist"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ListBox
+                                x:Name="Deezer_Playlist_Listbox"
+                                ItemsSource="{Binding playlistList}"
+                                SelectionChanged="Deezer_Playlist_Listbox_SelectionChanged"
+                                SelectionMode="Single"
+                                Style="{StaticResource styleListBoxDefault}">
+                                <ListBox.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource styleListBoxItem}" TargetType="ListBoxItem">
+                                        <Setter Property="ContextMenu" Value="{StaticResource DownloadContextMenu}" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Width="Auto" Text="{Binding Albums}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button
+                             Grid.Row="1"
+                             Width="100"
+                             Height="35"
+                             Margin="0,8,8,8"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Bottom"
+                             Click="DownloadButton_Click"
+                             Content="Download"
+                             Style="{StaticResource DownloadFlatActionButton}" />
+                        </Grid>
+                    </TabItem>
+                    <TabItem
+                        x:Name="Deezer_Featured_TabItem"
+                        Header="Featured"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <ComboBox
+                                    x:Name="DeezerContainerSelectionComboBox"
+                                    Margin="0,20,0,0"
+                                    HorizontalAlignment="Center"
+                                    Foreground="White"
+                                    SelectedIndex="0"
+                                    SelectionChanged="DeezerContainerComboBox_SelectionChanged"
+                                    Style="{StaticResource ComboBoxStyle1}">
+                                    <ComboBoxItem Content="None" />
+                                    <ComboBoxItem Content="Reggaeton" />
+                                    <ComboBoxItem Content="Pop" />
+                                    <ComboBoxItem Content="Rock" />
+                                    <ComboBoxItem Content="Rap/Hip Hop" />
+                                    <ComboBoxItem Content="Dance" />
+                                    <ComboBoxItem Content="RNB" />
+                                    <ComboBoxItem Content="Alternative" />
+                                    <ComboBoxItem Content="Christian" />
+                                    <ComboBoxItem Content="Electro" />
+                                    <ComboBoxItem Content="Reggae" />
+                                    <ComboBoxItem Content="Salsa" />
+                                </ComboBox>
+                                <ItemsControl x:Name="Deezer_Featured_SectionsControl">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="10">
+                                                <!--<TextBlock
+                                                    Margin="0,5,0,5"
+                                                    FontSize="16"
+                                                    FontWeight="Bold"
+                                                    Foreground="White"
+                                                    Text="{Binding SectionName}" />-->
+                                                <ItemsControl ItemsPanel="{StaticResource AlbumsPanelTemplate}" ItemsSource="{Binding Albums}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Style="{StaticResource MaterialDesignCard}" Margin="10" Padding="10" Background="White">
+                                                                <Border Style="{StaticResource MaterialDesignCard}" Margin="0.1" Padding="0.1" Background="Black">
+                                                                    <StackPanel
+                                                                Margin="10"
+                                                                HorizontalAlignment="Center"
+                                                                Orientation="Vertical">
+                                                                <Border
+                                                                    Width="110"
+                                                                    Height="110"
+                                                                    Background="#FF333333"
+                                                                    BorderBrush="White"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="5">
+                                                                    <Image
+                                                                        Width="100"
+                                                                        Height="100"
+                                                                        Source="{Binding Cover}"
+                                                                        Stretch="Fill" />
+                                                                </Border>
+                                                                <TextBlock
+                                                                    Width="100"
+                                                                    Height="50"
+                                                                    Margin="0,5,0,5"
+                                                                    FontFamily="Segoe UI"
+                                                                    FontSize="12"
+                                                                    FontWeight="Bold"
+                                                                    Foreground="White"
+                                                                    Text="{Binding Title}"
+                                                                    TextAlignment="Center"
+                                                                    TextTrimming="CharacterEllipsis"
+                                                                    TextWrapping="Wrap" />
+                                                                <Button
+                                                                    Width="100"
+                                                                    Click="DeezerDownloadButton_Click"
+                                                                    Content="Download"
+                                                                    Style="{StaticResource TabButtonStyle2}"
+                                                                    Tag="{Binding}" Height="25" />
+                                                            </StackPanel>
+                                                                </Border>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem
+                        x:Name="Deezer_Chart_TabItem"
+                        Header="Chart"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <ComboBox
+                                    x:Name="DeezerChartContainerSelectionComboBox"
+                                    Margin="0,20,0,0"
+                                    HorizontalAlignment="Center"
+                                    Foreground="White"
+                                    SelectedIndex="0"
+                                    SelectionChanged="DeezerChartContainerComboBox_SelectionChanged"
+                                    Style="{StaticResource ComboBoxStyle1}">
+                                    <ComboBoxItem Content="None" />
+                                    <ComboBoxItem Content="Reggaeton" />
+                                    <ComboBoxItem Content="Pop" />
+                                    <ComboBoxItem Content="Rock" />
+                                    <ComboBoxItem Content="Rap/Hip Hop" />
+                                    <ComboBoxItem Content="Dance" />
+                                    <ComboBoxItem Content="RNB" />
+                                    <ComboBoxItem Content="Alternative" />
+                                    <ComboBoxItem Content="Christian" />
+                                    <ComboBoxItem Content="Electro" />
+                                    <ComboBoxItem Content="Reggae" />
+                                    <ComboBoxItem Content="Salsa" />
+                                </ComboBox>
+                                <ItemsControl x:Name="Deezer_Chart_SectionsControl">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="10">
+                                                    <!--<TextBlock
+                                                    Margin="0,5,0,5"
+                                                    FontSize="16"
+                                                    FontWeight="Bold"
+                                                    Foreground="White"
+                                                    Text="{Binding SectionName}" />-->
+                                                    <ItemsControl ItemsPanel="{StaticResource AlbumsPanelTemplate}" ItemsSource="{Binding Albums}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                            <Border Style="{StaticResource MaterialDesignCard}" Margin="10" Padding="10" Background="White">
+                                                                <Border Style="{StaticResource MaterialDesignCard}" Margin="0.1" Padding="0.1" Background="Black">
+                                                                <StackPanel
+                                                                Margin="10"
+                                                                HorizontalAlignment="Center"
+                                                                Orientation="Vertical">
+                                                                    <Border
+                                                                    Width="110"
+                                                                    Height="110"
+                                                                    Background="#FF333333"
+                                                                    BorderBrush="White"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="5">
+                                                                        <Image
+                                                                        Width="100"
+                                                                        Height="100"
+                                                                        Source="{Binding Cover}"
+                                                                        Stretch="Fill" />
+                                                                    </Border>
+                                                                    <TextBlock
+                                                                    Width="100"
+                                                                    Height="50"
+                                                                    Margin="0,5,0,5"
+                                                                    FontFamily="Segoe UI"
+                                                                    FontSize="12"
+                                                                    FontWeight="Bold"
+                                                                    Foreground="White"
+                                                                    Text="{Binding Title}"
+                                                                    TextAlignment="Center"
+                                                                    TextTrimming="CharacterEllipsis"
+                                                                    TextWrapping="Wrap" />
+                                                                    <Button
+                                                                    Width="100"
+                                                                    Click="DeezerChartDownloadButton_Click"
+                                                                    Content="Download"
+                                                                    Style="{StaticResource TabButtonStyle2}"
+                                                                    Tag="{Binding}" Height="25"/>
+                                                                </StackPanel>
+                                                                </Border>
+                                                            </Border>
+                                                          </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </TabItem>
+
+            <!--  Qobuz Tab  -->
+            <TabItem
+                x:Name="Qobuz_TabItem"
+                Header="Qobuz"
+                Style="{StaticResource styleTabItemDefault}">
+                <TabControl
+                    x:Name="QobuzTabTabControl"
+                    Background="Black"
+                    SelectionChanged="QobuzTabTabControl_SelectionChanged"
+                    Style="{StaticResource substyleTabControlDefault}">
+                    <TabItem
+                        x:Name="Qobuz_Artist_TabItem"
+                        Header="Artists"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ListBox
+                                x:Name="Qobuz_Artist_Listbox"
+                                ItemsSource="{Binding Qobuz_Artist_List}"
+                                MouseDoubleClick="Qobuz_Artist_Listbox_MouseDoubleClick"
+                                SelectionChanged="Qobuz_Artist_Listbox_SelectionChanged"
+                                SelectionMode="Single"
+                                Style="{StaticResource styleListBoxDefault}">
+                                <ListBox.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource styleListBoxItem}" TargetType="ListBoxItem">
+                                        <Setter Property="ContextMenu" Value="{StaticResource DownloadContextMenu}" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Width="Auto" Text="{Binding Albums}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button
+                             Grid.Row="1"
+                             Width="100"
+                             Height="35"
+                             Margin="0,8,8,8"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Bottom"
+                             Click="DownloadButton_Click"
+                             Content="Download"
+                             Style="{StaticResource DownloadFlatActionButton}" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem
+                        x:Name="Qobuz_Albums_TabItem"
+                        Header="Album"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ListBox
+                                x:Name="Qobuz_Albums_Listbox"
+                                ItemsSource="{Binding Qobuz_Albums_List}"
+                                MouseDoubleClick="Qobuz_Albums_Listbox_MouseDoubleClick"
+                                SelectionChanged="Qobuz_Albums_Listbox_SelectionChanged"
+                                SelectionMode="Extended"
+                                Style="{StaticResource styleListBoxDefault}">
+                                <ListBox.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource styleListBoxItem}" TargetType="ListBoxItem">
+                                        <Setter Property="ContextMenu" Value="{StaticResource DownloadContextMenu}" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Width="Auto" Text="{Binding Albums}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button
+                             Grid.Row="1"
+                             Width="100"
+                             Height="35"
+                             Margin="0,8,8,8"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Bottom"
+                             Click="DownloadButton_Click"
+                             Content="Download"
+                             Style="{StaticResource DownloadFlatActionButton}" />
+                        </Grid>
+                    </TabItem>
+                    <TabItem
+                        x:Name="Qobuz_Songs_TabItem"
+                        Header="Track"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ListBox
+                                x:Name="Qobuz_Songs_Listbox"
+                                ItemsSource="{Binding Qobuz_Songs_List}"
+                                SelectionChanged="Qobuz_Songs_Listbox_SelectionChanged"
+                                SelectionMode="Single"
+                                Style="{StaticResource styleListBoxDefault}">
+                                <ListBox.ItemContainerStyle>
+                                    <Style BasedOn="{StaticResource styleListBoxItem}" TargetType="ListBoxItem">
+                                        <Setter Property="ContextMenu" Value="{StaticResource DownloadContextMenu}" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Width="Auto" Text="{Binding Albums}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button
+                             Grid.Row="1"
+                             Width="100"
+                             Height="35"
+                             Margin="0,8,8,8"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Bottom"
+                             Click="DownloadButton_Click"
+                             Content="Download"
+                             Style="{StaticResource DownloadFlatActionButton}" />
+                        </Grid>
+                    </TabItem>
+                    <TabItem
+                        x:Name="Qobuz_Featured_TabItem"
+                        Header="Featured"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+
+                                <ComboBox
+                                    x:Name="ContainerSelectionComboBox"
+                                    Margin="0,20,0,0"
+                                    HorizontalAlignment="Center"
+                                    Foreground="White"
+                                    SelectedIndex="0"
+                                    SelectionChanged="ContainerSelectionComboBox_SelectionChanged"
+                                    Style="{StaticResource ComboBoxStyle1}">
+                                    <ComboBoxItem Content="None" />
+                                    <ComboBoxItem Content="New Releases" />
+                                    <ComboBoxItem Content="Recent Releases" />
+                                    <ComboBoxItem Content="Press Awards" />
+                                    <ComboBoxItem Content="Album Charts" />
+                                    <ComboBoxItem Content="Album Of The Week" />
+                                    <ComboBoxItem Content="Re Release Of The Week" />
+                                </ComboBox>
+                                <ItemsControl x:Name="Qobuz_Featured_SectionsControl">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="10">
+                                                <!--<TextBlock
+                                                    Margin="0,5,0,5"
+                                                    FontSize="16"
+                                                    FontWeight="Bold"
+                                                    Foreground="White"
+                                                    Text="{Binding SectionName}" />-->
+                                                <ItemsControl ItemsPanel="{StaticResource AlbumsPanelTemplate}" ItemsSource="{Binding Albums}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Style="{StaticResource MaterialDesignCard}" Margin="10" Padding="10" Background="White">
+                                                                <Border Style="{StaticResource MaterialDesignCard}" Margin="0.1" Padding="0.1" Background="Black">
+                                                                <StackPanel
+                                                                Margin="10"
+                                                                HorizontalAlignment="Center"
+                                                                Orientation="Vertical">
+                                                                <Border
+                                                                    Width="110"
+                                                                    Height="110"
+                                                                    Background="#FF333333"
+                                                                    BorderBrush="White"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="5">
+                                                                    <Image
+                                                                        Width="100"
+                                                                        Height="100"
+                                                                        Source="{Binding QobuzPoster}"
+                                                                        Stretch="Fill" />
+                                                                </Border>
+                                                                <TextBlock
+                                                                    Width="100"
+                                                                    Height="50"
+                                                                    Margin="0,5,0,5"
+                                                                    FontFamily="Segoe UI"
+                                                                    FontSize="12"
+                                                                    FontWeight="Bold"
+                                                                    Foreground="White"
+                                                                    Text="{Binding Qposterlabel}"
+                                                                    TextAlignment="Center"
+                                                                    TextTrimming="CharacterEllipsis"
+                                                                    TextWrapping="Wrap" />
+                                                                <Button
+                                                                    Width="100"
+                                                                    Click="DownloadButton_Click"
+                                                                    Content="Download"
+                                                                    Style="{StaticResource TabButtonStyle2}"
+                                                                    Tag="{Binding}"  Height="25"/>
+                                                            </StackPanel>
+                                                                </Border>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem
+                        x:Name="Qobuz_Genre_TabItem"
+                        Header="Genre"
+                        Style="{StaticResource styleTabItemDefault}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <ComboBox
+                                    x:Name="GenreSelectionComboBox"
+                                    Margin="0,20,0,0"
+                                    HorizontalAlignment="Center"
+                                    Foreground="White"
+                                    SelectedIndex="0"
+                                    SelectionChanged="GenreSelectionComboBox_SelectionChanged"
+                                    Style="{StaticResource ComboBoxStyle1}">
+                                    <ComboBoxItem Content="None" />
+                                    <ComboBoxItem Content="Rap" />
+                                    <ComboBoxItem Content="Pop" />
+                                    <ComboBoxItem Content="Latin" />
+                                    <ComboBoxItem Content="Electro" />
+                                    <ComboBoxItem Content="Classical" />
+                                    <ComboBoxItem Content="RNB" />
+                                    <ComboBoxItem Content="World" />
+                                    <ComboBoxItem Content="Comedy" />
+                                </ComboBox>
+                                <ItemsControl x:Name="Qobuz_Genre_SectionsControl">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="10">
+                                                <!--<TextBlock
+                                                    Margin="0,5,0,5"
+                                                    FontSize="16"
+                                                    FontWeight="Bold"
+                                                    Foreground="White"
+                                                    Text="{Binding SectionName}" />-->
+                                                <ItemsControl ItemsPanel="{StaticResource AlbumsPanelTemplate}" ItemsSource="{Binding Albums}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Style="{StaticResource MaterialDesignCard}" Margin="10" Padding="10" Background="White">
+                                                                <Border Style="{StaticResource MaterialDesignCard}" Margin="0.1" Padding="0.1" Background="Black">
+                                                                <StackPanel
+                                                                Margin="10"
+                                                                HorizontalAlignment="Center"
+                                                                Orientation="Vertical">
+                                                                <Border
+                                                                    Width="110"
+                                                                    Height="110"
+                                                                    Background="#FF333333"
+                                                                    BorderBrush="White"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="5">
+                                                                    <Image
+                                                                        Width="100"
+                                                                        Height="100"
+                                                                        Source="{Binding QobuzPoster}"
+                                                                        Stretch="Fill" />
+                                                                </Border>
+                                                                <TextBlock
+                                                                    Width="100"
+                                                                    Height="50"
+                                                                    Margin="0,5,0,5"
+                                                                    FontFamily="Segoe UI"
+                                                                    FontSize="12"
+                                                                    FontWeight="Bold"
+                                                                    Foreground="White"
+                                                                    Text="{Binding Qposterlabel}"
+                                                                    TextAlignment="Center"
+                                                                    TextTrimming="CharacterEllipsis"
+                                                                    TextWrapping="Wrap" />
+                                                                <Button
+                                                                    Width="100"
+                                                                    Click="DownloadButton_Click"
+                                                                    Content="Download"
+                                                                    Style="{StaticResource TabButtonStyle2}"
+                                                                    Tag="{Binding}" Height="25"/>
+                                                            </StackPanel>
+                                                            </Border>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </TabItem>
+            <TabItem Style="{StaticResource styleTabItemDefault}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Margin="0,0,5,0" Text="Downloads" />
+                        <Border
+                            x:Name="DownloadBadge"
+                            Width="15"
+                            Height="15"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Background="Red"
+                            CornerRadius="10"
+                            Visibility="Collapsed">
+                            <TextBlock
+                                x:Name="DownloadBadgeCount"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="0" Margin="0.5,0.5,1.5,0" />
+                        </Border>
+                    </StackPanel>
+                </TabItem.Header>
+                <local:DownloadManagerControl x:Name="downloadManagerControl" />
+            </TabItem>
+        </TabControl>
+        <Grid
+            Grid.Column="1"
+            Margin="55,35,55,25"
+            VerticalAlignment="Top" Height="40">
+            <Border
+                x:Name="GenreLabelBorder"
+                Margin="0,0,20,0"
+                Padding="10,5"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="#FF333333"
+                BorderBrush="White"
+                BorderThickness="1"
+                CornerRadius="5"
+                Visibility="Collapsed">
+                <TextBlock
+                    FontSize="18"
+                    FontWeight="Bold"
+                    Foreground="White"
+                    Text="GENRE"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect
+                                        BlurRadius="4"
+                                        Direction="320"
+                                        Opacity="0.5"
+                                        ShadowDepth="3"
+                                        Color="#888888" />
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+            <Border
+                x:Name="FeaturedLabelBorder"
+                Margin="0,0,20,0"
+                Padding="10,5"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="#FF333333"
+                BorderBrush="White"
+                BorderThickness="1"
+                CornerRadius="5"
+                Visibility="Collapsed">
+                <TextBlock
+                    FontSize="18"
+                    FontWeight="Bold"
+                    Foreground="White"
+                    Text="FEATURED"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect
+                                        BlurRadius="4"
+                                        Direction="320"
+                                        Opacity="0.5"
+                                        ShadowDepth="3"
+                                        Color="#888888" />
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+            <Border
+                x:Name="DeezerFeaturedLabelBorder"
+                Margin="0,0,20,0"
+                Padding="10,5"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="#FF333333"
+                BorderBrush="White"
+                BorderThickness="1"
+                CornerRadius="5"
+                Visibility="Collapsed">
+                <TextBlock
+                    FontSize="18"
+                    FontWeight="Bold"
+                    Foreground="White"
+                    Text="FEATURED"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect
+                                        BlurRadius="4"
+                                        Direction="320"
+                                        Opacity="0.5"
+                                        ShadowDepth="3"
+                                        Color="#888888" />
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+            <Border
+                x:Name="ChartLabelBorder"
+                Margin="0,0,20,0"
+                Padding="10,5"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="#FF333333"
+                BorderBrush="White"
+                BorderThickness="1"
+                CornerRadius="5"
+                Visibility="Collapsed">
+                <TextBlock
+                    FontSize="18"
+                    FontWeight="Bold"
+                    Foreground="White"
+                    Text="CHART"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect
+                                        BlurRadius="4"
+                                        Direction="320"
+                                        Opacity="0.5"
+                                        ShadowDepth="3"
+                                        Color="#888888" />
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+            <TextBox
+                x:Name="Search_Box"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                VerticalContentAlignment="Center"
+                Foreground="Gray"
+                GotFocus="Search_Box_GotFocus"
+                KeyDown="txt1_KeyDown"
+                LostFocus="Search_Box_LostFocus"
+                Style="{StaticResource ModernFlatTextBox}"
+                Text="Enter Title\Album\Track Or Url..."
+                TextAlignment="Left" Padding="30,5,35,5" />
+            <CheckBox
+                x:Name="UrlCheckBox"
+                Width="25"
+                Height="25"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Background="{x:Null}"
+                Checked="UrlCheckBox_Checked"
+                Unchecked="UrlCheckBox_Unchecked">
+                <CheckBox.Template>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border
+                            x:Name="IconBorder"
+                            Width="25"
+                            Height="25"
+                            Background="{x:Null}"
+                            CornerRadius="10">
+                           
+                            <Image
+                                Width="25"
+                                Height="25"
+                                Source="/URL.png" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="IconBorder" Property="Background" Value="LightGray" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </CheckBox.Template>
+            </CheckBox>
+            <Button
+            x:Name="Search"
+            Width="40"
+            Height="40"
+            HorizontalAlignment="Right"
+            Background="Transparent"
+            Click="Search_Click"
+            Foreground="Black"
+            Style="{StaticResource ModernSearchButtonStyle}">
+                <Path Data="M10.5 0C4.70101 0 0 4.70101 0 10.5C0 16.299 4.70101 21 10.5 21C12.819 21 14.9465 20.3208 16.6575 19.1162L21.6426 24.1012C22.1275 24.5861 22.8784 24.5861 23.3633 24.1012L24.1012 23.3633C24.5861 22.8784 24.5861 22.1275 24.1012 21.6426L19.1162 16.6575C20.3208 14.9465 21 12.819 21 10.5C21 4.70101 16.299 0 10.5 0ZM10.5 18C6.35787 18 3 14.6421 3 10.5C3 6.35787 6.35787 3 10.5 3C14.6421 3 18 6.35787 18 10.5C18 14.6421 14.6421 18 10.5 18Z" Fill="Black" Width="25" Height="25" />
+            </Button>
+        </Grid>
+    </Grid>
+</Window>
