@@ -210,11 +210,11 @@ namespace WpfApp1
         private async Task HandleEmbeddedFileRequest(HttpListenerContext context, string filename)
         {
             var response = context.Response;
-            string resourcePath = $"WpfApp1.wwwroot{filename.Replace('/', '.')}";
+            string resourcePath = $"BeatOn.wwwroot{filename.Replace('/', '.')}";
 
             if (filename == "/")
             {
-                resourcePath = "WpfApp1.wwwroot.index.html";
+                resourcePath = "BeatOn.wwwroot.index.html";
             }
 
             using (Stream resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourcePath))
