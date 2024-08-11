@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BeatOn - Your Music Companion</title>
+    <title>BeatOn</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -17,10 +17,33 @@
         .slogan {
             font-size: 2rem;
             font-weight: 700;
-            color: #1DB954;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             margin-bottom: 1.5rem;
             text-align: center;
+            padding: 10px;
+            background: #333333;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+            animation: breath 2s ease-in-out infinite;
+            // Apply the breathing effect
+        }
+
+        @keyframes breath {
+            0%, 100% {
+                background-color: #333333;
+                // Return to the original color box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                // More prominent shadow at start/end
+            }
+
+            50% {
+                background-color: #474747;
+                // Lighten the color at the peak of the "breath" box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+                // Less prominent shadow in the middle
+            }
         }
 
         .navbar {
@@ -278,6 +301,37 @@
         input:checked ~ .toggle-icon.grid-icon {
             color: #1DB954;
         }
+
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 80%;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s ease-in-out;
+        }
+
+            .notification.info {
+                background-color: rgba(29, 185, 84, 0.7); /* Spotify green with transparency */
+            }
+
+            .notification.error {
+                background-color: rgba(255, 0, 0, 0.9); /* Red with transparency */
+            }
+
+        .service-selector .btn-check:checked + .btn-outline-primary {
+            background-color: #1DB954;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -290,7 +344,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="index.html">Dashboard</a>
+                        <a class="nav-link" href="downloads">Downloads</a>
                     </li>
                 </ul>
             </div>
@@ -299,7 +353,7 @@
 
     <main class="container" style="margin-top: 80px;">
         <div class="search-container">
-            <h2 class="slogan">BeatOn: Your Personal Music Maestro</h2>
+            <h2 class="slogan">BeatOn: The Pulse of Your Playlist</h2>
             <form id="searchForm">
                 <div class="input-group mb-3">
                     <input type="text" class="form-control" id="searchTerm" placeholder="Search for music..." required>
@@ -315,6 +369,14 @@
                         <label class="btn btn-outline-secondary" for="searchTrack">Track</label>
                         <input type="radio" class="btn-check" name="searchType" id="searchPlaylist" value="playlist">
                         <label class="btn btn-outline-secondary" for="searchPlaylist">Playlist</label>
+                    </div>
+                </div>
+                <div class="service-selector mt-3">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="service" id="deezerRadio" value="deezer" checked>
+                        <label class="btn btn-outline-primary" for="deezerRadio">Deezer</label>
+                        <input type="radio" class="btn-check" name="service" id="qobuzRadio" value="qobuz">
+                        <label class="btn btn-outline-primary" for="qobuzRadio">Qobuz</label>
                     </div>
                 </div>
             </form>
@@ -336,11 +398,62 @@
         let downloadStatuses = {};
         let currentView = 'list';
         let lastSearchResults = [];
+        let currentService = 'deezer'; // Default to Deezer
+
+        // Function to set the current service
+        function setCurrentService(service) {
+            currentService = service;
+            localStorage.setItem('lastUsedService', service);
+        }
 
         document.addEventListener('DOMContentLoaded', function () {
             const savedSearchTerm = localStorage.getItem('searchTerm');
             const savedSearchType = localStorage.getItem('searchType');
             const savedView = localStorage.getItem('currentView') || 'list';
+            const lastUsedService = localStorage.getItem('lastUsedService');
+            const searchPlaylistRadio = document.getElementById('searchPlaylist');
+            const serviceRadios = document.querySelectorAll('input[name="service"]');
+
+            function updateSearchTypeState() {
+                const selectedService = document.querySelector('input[name="service"]:checked').value;
+
+                // Save the selected service to localStorage
+                localStorage.setItem('selectedService', selectedService);
+
+                if (selectedService === 'qobuz') {
+                    searchPlaylistRadio.disabled = true;
+                    // Optionally deselect if it was selected
+                    if (searchPlaylistRadio.checked) {
+                        document.getElementById('searchArtist').checked = true;
+                    }
+                } else {
+                    searchPlaylistRadio.disabled = false;
+                }
+            }
+
+            // Load the last selected service from localStorage
+            const lastSelectedService = localStorage.getItem('selectedService');
+            if (lastSelectedService) {
+                const radioToSelect = document.getElementById(`${lastSelectedService}Radio`);
+                if (radioToSelect) {
+                    radioToSelect.checked = true;
+                }
+            }
+
+            // Initial state update on page load
+            updateSearchTypeState();
+
+            // Add change event listeners to service radio buttons
+            serviceRadios.forEach(radio => {
+                radio.addEventListener('change', updateSearchTypeState);
+            });
+
+            if (lastUsedService) {
+                document.getElementById(lastUsedService + 'Radio').checked = true;
+                setCurrentService(lastUsedService);
+            } else {
+                setCurrentService('deezer'); // Default to Deezer if no service was saved
+            }
 
             if (savedSearchTerm) {
                 document.getElementById('searchTerm').value = savedSearchTerm;
@@ -355,10 +468,6 @@
                 updateViewToggle();
             }
 
-            if (savedSearchTerm && savedSearchType) {
-                performSearch(savedSearchTerm, savedSearchType);
-            }
-
             const savedStatuses = localStorage.getItem('downloadStatuses');
             if (savedStatuses) {
                 downloadStatuses = JSON.parse(savedStatuses);
@@ -371,6 +480,19 @@
                 currentView = this.checked ? 'grid' : 'list';
                 updateViewToggle();
                 displayResults(lastSearchResults);
+            });
+
+            if (savedSearchTerm && savedSearchType) {
+                performSearch(savedSearchTerm, savedSearchType);
+            }
+
+            // Start periodic updates
+            setInterval(updateDownloadStatuses, 5000);
+        });
+
+        document.querySelectorAll('input[name="service"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                setCurrentService(this.value);
             });
         });
 
@@ -389,104 +511,231 @@
             const viewToggle = document.getElementById('viewToggle');
             viewToggle.checked = currentView === 'grid';
             localStorage.setItem('currentView', currentView);
-        }
+        }      
+
+        document.getElementById('deezerButton').addEventListener('click', function () {
+            currentService = 'deezer';
+            this.classList.add('active');
+            document.getElementById('qobuzButton').classList.remove('active');
+        });
+
+        document.getElementById('qobuzButton').addEventListener('click', function () {
+            currentService = 'qobuz';
+            this.classList.add('active');
+            document.getElementById('deezerButton').classList.remove('active');
+        });
 
         function performSearch(searchTerm, searchType) {
+            const selectedService = document.querySelector('input[name="service"]:checked').value;
+            showNotification(`Searching ${selectedService}...`, 'info');
+            /*console.log(`Searching for ${searchTerm} in ${searchType} using ${selectedService}`);*/
+
             fetch('/api/search', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ searchTerm, searchType })
+                body: JSON.stringify({ searchTerm, searchType, service: selectedService })
             })
-                .then(response => response.json())
-                .then(data => {
-                    lastSearchResults = data;
-                    displayResults(data);
+                .then(response => {
+                    /*console.log(`Search response status: ${response.status}`);*/
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+                        });
+                    }
+                    return response.json();
                 })
-                .catch(error => console.error('Error:', error));
+                .then(data => {
+                    /*console.log('Search response data:', data);*/
+                    if (data.Success) {
+                        lastSearchResults = data.Results;
+                        displayResults(data.Results);
+                        /*showNotification(`Search completed`, 'info');*/
+                    } else {
+                        throw new Error(data.Error || `Unknown error occurred while searching ${selectedService}`);
+                    }
+                })
+                .catch(error => {
+                    /*console.error('Error:', error);*/
+                    showNotification(`Search failed on ${selectedService}. ${error.message}`, 'error');
+                    displayResults([]); // Clear results on error
+                });
         }
+
+        // Add this function to handle the search form submission
+        document.getElementById('searchForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const searchTerm = document.getElementById('searchTerm').value;
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            performSearch(searchTerm, searchType);
+        });
+
+        // Add this to ensure the correct service is used when the page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            const lastUsedService = localStorage.getItem('lastUsedService') || 'deezer';
+            document.querySelector(`input[name="service"][value="${lastUsedService}"]`).checked = true;
+        });
+
+        // Add this to save the selected service when it changes
+        document.querySelectorAll('input[name="service"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                localStorage.setItem('lastUsedService', this.value);
+            });
+        });
 
         function displayResults(data) {
             const searchResults = document.getElementById('searchResults');
             searchResults.innerHTML = '';
-
-            if (data.length === 0) {
+            if (!Array.isArray(data) || data.length === 0) {
                 searchResults.innerHTML = '<p class="text-center">No results found</p>';
                 return;
             }
-
             searchResults.className = currentView + '-view';
-
             data.forEach(result => {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'result-item';
                 resultItem.dataset.artist = result.artistName;
                 resultItem.dataset.album = result.title;
-
                 const statusKey = `${result.artistName}-${result.title}`;
                 const status = downloadStatuses[statusKey] || 'notstarted';
+                const escapedAlbumTitle = result.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                const escapedArtistName = result.artistName.replace(/'/g, "\\'").replace(/"/g, '\\"');
 
-                let statusHtml;
-                if (status === 'completed') {
-                    statusHtml = '<div class="status-icon-container"><i class="fas fa-check status-icon"></i></div>';
-                } else if (status === 'inprogress') {
-                    statusHtml = '<button class="download-btn" disabled><i class="fas fa-spinner fa-spin"></i></button>';
-                } else {
-                    const escapedAlbumTitle = result.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
-                    const escapedArtistName = result.artistName.replace(/'/g, "\\'").replace(/"/g, '\\"');
-                    statusHtml = `<button class="download-btn" onclick="downloadAlbum('${result.link}', '${escapedAlbumTitle}', '${escapedArtistName}', this)">
-                                            <i class="fas fa-download"></i>
-                                          </button>`;
-                }
+                let statusIcon = 'fa-download';
+                if (status === 'completed') statusIcon = 'fa-check';
+                else if (status === 'inprogress') statusIcon = 'fa-spinner fa-spin';
+                else if (status === 'failed') statusIcon = 'fa-exclamation-triangle';
+
+                const statusHtml = `
+            <button class="download-btn" onclick="downloadAlbum('${result.link}', '${escapedAlbumTitle}', '${escapedArtistName}', this)" ${status === 'inprogress' ? 'disabled' : ''}>
+                <i class="fas ${statusIcon}"></i>
+            </button>`;
+
                 resultItem.innerHTML = `
-                        <img src="${result.cover || 'default-cover.jpg'}" alt="${result.title}" class="cover-img">
-                        <div class="result-info">
-                            <p class="result-title">${result.title}</p>
-                            <p class="result-artist">${result.artistName}</p>
-                        </div>
-                        ${statusHtml}
-                    `;
+            <img src="${result.cover || 'default-cover.jpg'}" alt="${result.title}" class="cover-img">
+            <div class="result-info">
+                <p class="result-title">${result.title}</p>
+                <p class="result-artist">${result.artistName}</p>
+            </div>
+            ${statusHtml}
+        `;
                 searchResults.appendChild(resultItem);
             });
         }
 
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.classList.add('notification', type);
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 10);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
         function downloadAlbum(albumUrl, albumName, artistName, buttonElement) {
             const lidarrRootPath = ''; // Update this to your Lidarr root path
-
             buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             buttonElement.disabled = true;
-
             const statusKey = `${artistName}-${albumName}`;
-            downloadStatuses[statusKey] = 'inprogress';
+            downloadStatuses[statusKey] = 'in progress';
             saveDownloadStatuses();
-
+            showNotification('Starting download...', 'info');
             fetch('/api/download', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ albumUrl, albumName, artistName, lidarrRootPath })
+                body: JSON.stringify({
+                    albumUrl,
+                    albumName,
+                    artistName,
+                    lidarrRootPath,
+                    service: currentService // Add this line to include the current service
+                })
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.Success) {
-                        buttonElement.outerHTML = '<div class="status-icon-container"><i class="fas fa-check status-icon"></i></div>';
-                        downloadStatuses[statusKey] = 'completed';
+                        /*console.log('Download started successfully');*/
                     } else {
-                        buttonElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-                        buttonElement.disabled = false;
-                        downloadStatuses[statusKey] = 'failed';
+                        throw new Error('Download failed to start');
                     }
-                    saveDownloadStatuses();
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     buttonElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
                     buttonElement.disabled = false;
                     downloadStatuses[statusKey] = 'failed';
+                    showNotification('Download failed. Please try again.', 'error');
+                })
+                .finally(() => {
                     saveDownloadStatuses();
                 });
+        }
+
+        function updateDownloadStatuses() {
+            fetch('/api/download-progress')
+                .then(response => response.json())
+                .then(progressData => {
+                    /*console.log("Received progress data:", progressData);*/
+
+                    // Create a set of active downloads
+                    const activeDownloads = new Set(progressData.map(d => `${d.artistName}-${d.albumName}`));
+
+                    // Update statuses and mark completed downloads
+                    Object.keys(downloadStatuses).forEach(statusKey => {
+                        if (!activeDownloads.has(statusKey) && downloadStatuses[statusKey] === 'in progress') {
+                            downloadStatuses[statusKey] = 'completed';
+                            const [artistName, albumName] = statusKey.split('-');
+                            updateDownloadButton(artistName, albumName, 'completed', null);
+                            showNotification(`Download completed: ${albumName} by ${artistName}`, 'info');
+                        }
+                    });
+
+                    // Update active downloads
+                    progressData.forEach(download => {
+                        const statusKey = `${download.artistName}-${download.albumName}`;
+                        downloadStatuses[statusKey] = download.status;
+                        updateDownloadButton(download.artistName, download.albumName, download.status, download.progress);
+                    });
+
+                    saveDownloadStatuses();
+                    /*console.log("Current download statuses:", downloadStatuses);*/
+                })
+                .catch(error => console.error('Error updating download statuses:', error));
+        }
+
+        function updateDownloadButton(artistName, albumName, status, progress) {
+            const resultItem = document.querySelector(`.result-item[data-artist="${artistName}"][data-album="${albumName}"]`);
+            if (resultItem) {
+                const button = resultItem.querySelector('.download-btn');
+                if (button) {
+                    const icon = button.querySelector('i');
+                    button.disabled = (status === 'inprogress');
+
+                    if (status === 'completed') {
+                        icon.className = 'fas fa-check';
+                    } else if (status === 'inprogress') {
+                        icon.className = 'fas fa-spinner fa-spin';
+                        let progressText = progress ? ` ${progress}%` : '';
+                        button.innerHTML = `<i class="fas fa-spinner fa-spin"></i>${progressText}`;
+                    } else if (status === 'failed') {
+                        icon.className = 'fas fa-exclamation-triangle';
+                    } else {
+                        icon.className = 'fas fa-download';
+                    }
+                }
+            }
         }
 
         function saveDownloadStatuses() {
@@ -497,20 +746,15 @@
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
-        // Add a function to handle window resizing
         function handleResize() {
             if (window.innerWidth <= 576) {
-                // Switch to list view on small screens
                 currentView = 'list';
                 updateViewToggle();
                 displayResults(lastSearchResults);
             }
         }
 
-        // Add event listener for window resize
         window.addEventListener('resize', handleResize);
-
-        // Call handleResize on initial load
         handleResize();
     </script>
 </body>

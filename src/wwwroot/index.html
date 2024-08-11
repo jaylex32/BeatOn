@@ -71,7 +71,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="search.html">Search</a>
+                        <a class="nav-link" href="search">Search</a>
                     </li>
                 </ul>
             </div>
@@ -191,45 +191,69 @@
         let downloadTrendChart = null;
 
         function updateDashboard() {
-            fetch('/api/status')
-                .then(response => response.json())
-                .then(data => {
-                    console.log("Received data:", data);
-                    console.log("Recent downloads:", data.RecentDownloads);
-                    document.getElementById('downloadCount').innerHTML = `<span style="color: #fff;">Total Downloads: ${data.DownloadCount}</span>`;
-                    document.getElementById('status').innerHTML = `<span style="color: #fff;">Status: ${data.Status}</span>`;
+            Promise.all([
+                fetch('/api/status').then(response => response.json()),
+                fetch('/api/system').then(response => response.json()),
+                fetch('/api/download-progress').then(response => response.json())
+            ])
+                .then(([statusData, systemData, progressData]) => {
+                    console.log("Received status data:", statusData);
+                    console.log("Received system data:", systemData);
+                    console.log("Received progress data:", progressData);
 
-                    updateRecentDownloadsTable(data.RecentDownloads);
-                    updateActiveDownloadsTable(data.ActiveDownloads);
-                    updateFailedDownloadsTable(data.FailedDownloads);
-                    updateDownloadTrendChart(data.DownloadCount);
-                    updateStorageInfo(data.StorageInfo);
-                })
-                .catch(error => console.error('Error:', error));
-
-            fetch('/api/system')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('cpuUsage').innerHTML = `<span style="color: #fff;">CPU Usage: ${data.CpuUsage.toFixed(2)}%</span>`;
-                    document.getElementById('memoryUsage').innerHTML = `<span style="color: #fff;">Memory Usage: ${data.MemoryUsage.toFixed(2)} MB / ${data.TotalMemory.toFixed(2)} MB</span>`;
+                    updateStatusInfo(statusData);
+                    updateSystemInfo(systemData);
+                    updateDownloadProgress(progressData);
+                    updateRecentDownloadsTable(statusData.RecentDownloads || []);
+                    updateFailedDownloadsTable(statusData.FailedDownloads || []);
+                    updateDownloadTrendChart(statusData.DownloadCount || 0);
+                    updateStorageInfo(statusData.StorageInfo);
                 })
                 .catch(error => console.error('Error:', error));
         }
 
+        function updateStatusInfo(data) {
+            document.getElementById('downloadCount').innerHTML = `<span style="color: #fff;">Total Downloads: ${data.DownloadCount || 0}</span>`;
+            document.getElementById('status').innerHTML = `<span style="color: #fff;">Status: ${data.Status || 'Unknown'}</span>`;
+        }
+
+        function updateSystemInfo(data) {
+            document.getElementById('cpuUsage').innerHTML = `<span style="color: #fff;">CPU Usage: ${data.CpuUsage?.toFixed(2) || 'N/A'}%</span>`;
+            document.getElementById('memoryUsage').innerHTML = `<span style="color: #fff;">Memory Usage: ${data.MemoryUsage?.toFixed(2) || 'N/A'} MB / ${data.TotalMemory?.toFixed(2) || 'N/A'} MB</span>`;
+        }
+
+        function updateDownloadProgress(progressData) {
+            const activeDownloadsTable = document.querySelector('#activeDownloadsTable tbody');
+            activeDownloadsTable.innerHTML = '';
+
+            if (progressData.length === 0) {
+                const row = activeDownloadsTable.insertRow();
+                row.innerHTML = '<td colspan="3" style="color: #fff; text-align: center;">No active downloads</td>';
+            } else {
+                progressData.forEach(download => {
+                    const row = activeDownloadsTable.insertRow();
+                    let statusHtml = `<i class="fas fa-spinner fa-spin"></i> ${download.progress || " In progress"}`;
+                    row.innerHTML = `
+                <td style="color: #fff;">${download.artistName}</td>
+                <td style="color: #fff;">${download.albumName}</td>
+                <td style="color: #fff;">${statusHtml}</td>
+            `;
+                });
+            }
+        }
+
         function updateRecentDownloadsTable(recentDownloads) {
-            /*console.log("Updating recent downloads table with:", recentDownloads);*/
             const tableBody = document.querySelector('#recentDownloadsTable tbody');
             tableBody.innerHTML = '';
             if (recentDownloads && recentDownloads.length > 0) {
                 recentDownloads.forEach(download => {
-                    /*console.log("Processing download:", download);*/
                     const row = tableBody.insertRow();
                     row.innerHTML = `
-                <td style="color: #fff;">${download.ArtistName}</td>
-                <td style="color: #fff;">${download.AlbumName}</td>
-                <td style="color: #fff;">${new Date(download.DownloadTime).toLocaleString()}</td>
-                <td style="color: #fff;">${download.Status}</td>
-            `;
+                            <td style="color: #fff;">${download.ArtistName}</td>
+                            <td style="color: #fff;">${download.AlbumName}</td>
+                            <td style="color: #fff;">${new Date(download.DownloadTime).toLocaleString()}</td>
+                            <td style="color: #fff;">${download.Status}</td>
+                        `;
                 });
             } else {
                 const row = tableBody.insertRow();
@@ -237,43 +261,31 @@
             }
         }
 
-        function updateActiveDownloadsTable(activeDownloads) {
-            const tableBody = document.querySelector('#activeDownloadsTable tbody');
-            tableBody.innerHTML = '';
-            activeDownloads.forEach(download => {
-                const row = tableBody.insertRow();
-                row.innerHTML = `
-                <td style="color: #fff;">${download.ArtistName}</td>
-                <td style="color: #fff;">${download.AlbumName}</td>
-                <td style="color: #fff;">${download.Status}</td>
-            `;
-            });
-        }
-
         function updateFailedDownloadsTable(failedDownloads) {
             const tableBody = document.querySelector('#failedDownloadsTable tbody');
             tableBody.innerHTML = '';
-            failedDownloads.forEach(download => {
+            if (failedDownloads && failedDownloads.length > 0) {
+                failedDownloads.forEach(download => {
+                    const row = tableBody.insertRow();
+                    row.innerHTML = `
+                            <td style="color: #fff;">${download.ArtistName}</td>
+                            <td style="color: #fff;">${download.AlbumName}</td>
+                            <td style="color: #fff;">${new Date(download.DownloadTime).toLocaleString()}</td>
+                            <td style="color: #fff;">${download.Status === 'Failed' || download.Status === 'Error' ? download.Status : ''}</td>
+                        `;
+                });
+            } else {
                 const row = tableBody.insertRow();
-                row.innerHTML = `
-            <td style="color: #fff;">${download.ArtistName}</td>
-            <td style="color: #fff;">${download.AlbumName}</td>
-            <td style="color: #fff;">${new Date(download.DownloadTime).toLocaleString()}</td>
-            <td style="color: #fff;">${download.Status === 'Failed' || download.Status === 'Error' ? download.Status : ''}</td>
-        `;
-            });
+                row.innerHTML = '<td colspan="4" style="color: #fff; text-align: center;">No failed downloads</td>';
+            }
         }
 
         function updateDownloadTrendChart(currentCount) {
-            /*console.log("Current count:", currentCount);*/
             downloadData.push({ time: new Date(), count: currentCount });
             if (downloadData.length > 20) downloadData.shift();
 
-            /*console.log("Download data:", downloadData);*/
-
             const ctx = document.getElementById('downloadTrendChart').getContext('2d');
 
-            // Destroy previous chart instance if it exists
             if (downloadTrendChart) {
                 downloadTrendChart.destroy();
             }
