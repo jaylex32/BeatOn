@@ -5,6 +5,8 @@ thanks to firehawk52 for he's website 'https://rentry.co/firehawk52' where all t
 
 ##########################################################
 ![Albums](./assets/Albums.jpg)
+![Artist_Empty](./assets/Artist_Empty.jpg)
+![Artist](./assets/Artist.png)
 ![Downloads](./assets/Downloads.jpg)
 ![Featured](./assets/Featured.jpg)
 ![Settings](./assets/Settings.jpg)
