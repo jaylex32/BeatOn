@@ -25,6 +25,8 @@ using System.Windows.Threading;
 using Hardcodet.Wpf.TaskbarNotification;
 using static WpfApp1.MainWindow;
 using System.Security.Principal;
+using System.Windows.Markup;
+using System.Xml;
 
 namespace WpfApp1
 {
@@ -76,6 +78,8 @@ namespace WpfApp1
         private SemaphoreSlim downloadSemaphore;
         private SemaphoreSlim lidarrDownloadSemaphore;
         private LidarrDownloader lidarrDownloader;
+        private SemaphoreSlim qobuzDownloadSemaphore;
+        private QobuzDownloader qobuzDownloader;
         private WebUIServer _webUIServer;
         private DispatcherTimer downloadTimer;
 
@@ -83,10 +87,11 @@ namespace WpfApp1
         {
             InitializeComponent();
             UpdateDownloadBadge();
+            EnsureSettingsFileExists();
             // Instantiate your DatabaseManager
             DatabaseManager dbManager = new DatabaseManager();
             db = new DatabaseManager();
-            
+
             // Check if downloadManagerControl is not null before assigning DbManager
             if (downloadManagerControl != null)
             {
@@ -95,7 +100,7 @@ namespace WpfApp1
             else
             {
                 // Handle the case where downloadManagerControl is null
-               
+
             }
 
             // Initialize the settings object
@@ -127,11 +132,17 @@ namespace WpfApp1
             catch (Exception ex)
             {
                 //Debug.WriteLine($"Error in MainWindow constructor: {ex.Message}");
-                
+
             }
 
             // Set the LidarrDownloader in LidarrDownloaderStats
             lidarrDownloaderStats.SetLidarrDownloader(lidarrDownloader);
+
+            // Safely initialize SemaphoreSlim
+            qobuzDownloadSemaphore = InitializeSemaphore();
+
+            qobuzDownloader = new QobuzDownloader(db, downloadManagerControl, Dispatcher, lidarrDownloaderStats, qobuzDownloadSemaphore, this);
+
 
             if (settings.LidarrEnabled) // Only start if Lidarr is enabled
             {
@@ -150,7 +161,7 @@ namespace WpfApp1
                 }
                 //Debug.WriteLine($"WebUI URL: {webUIUrl}");
 
-                _webUIServer = new WebUIServer(lidarrDownloaderStats, lidarrDownloader, db, webUIUrl);
+                _webUIServer = new WebUIServer(lidarrDownloaderStats, lidarrDownloader, qobuzDownloader, db, webUIUrl);
                 Task.Run(async () =>
                 {
                     try
@@ -178,12 +189,25 @@ namespace WpfApp1
             // If db is used in the MainWindow context, initialize it as well
             db = dbManager;
 
-            string jsonFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "d-fi.config.json");
+            downloadSemaphore = new SemaphoreSlim(settings.ItemProcess); // Initialize the semaphore
 
-            if (!File.Exists(jsonFilePath))
+            string exePath = System.AppDomain.CurrentDomain.BaseDirectory + "d-fi.exe";
+            if (!File.Exists(exePath))
             {
-                string defaultJson =
-                            @"{
+                MessageBoxResult result = MessageBox.Show("The d-fi.exe was not found. It is required for the functionality of the program. Do you want to download it?", "Download d-fi.exe", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    DownloadAndUnzipDfi();
+                }
+            }
+        }
+
+        private void EnsureSettingsFileExists()
+        {
+            string settingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "d-fi.config.json");
+            if (!File.Exists(settingsFilePath))
+            {
+                string defaultJson = @"{
   ""ItemProcess"": 2,
   ""concurrency"": 2,
   ""saveLayout"": {
@@ -226,23 +250,7 @@ namespace WpfApp1
   ""WebUIEnabled"": false,
   ""WebUIUrl"": ""http://localhost:5000""
 }";
-
-                File.WriteAllText(jsonFilePath, defaultJson);
-            }
-
-            // Now we know the file exists, so we can read and deserialize it
-            string json = File.ReadAllText(jsonFilePath);
-            settings = JsonConvert.DeserializeObject<Settings>(json); // Deserialize the JSON into the settings object
-            downloadSemaphore = new SemaphoreSlim(settings.ItemProcess); // Initialize the semaphore
-
-            string exePath = System.AppDomain.CurrentDomain.BaseDirectory + "d-fi.exe";
-            if (!File.Exists(exePath))
-            {
-                MessageBoxResult result = MessageBox.Show("The d-fi.exe was not found. It is required for the functionality of the program. Do you want to download it?", "Download d-fi.exe", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result == MessageBoxResult.Yes)
-                {
-                    DownloadAndUnzipDfi();
-                }
+                File.WriteAllText(settingsFilePath, defaultJson);
             }
         }
         // FeaturedAlbum class definition
@@ -254,6 +262,7 @@ namespace WpfApp1
             public string Qposterlabel { get; set; }
             public string Genrelabel { get; set; }
         }
+
 
 
         private void LoadSettings()
@@ -279,6 +288,24 @@ namespace WpfApp1
                 // ... (initialize other properties)
             }
         }
+
+        private SemaphoreSlim InitializeSemaphore()
+        {
+            int concurrentDownloads = 2; // Default value
+            try
+            {
+                if (settings != null && settings.ItemProcess > 0)
+                {
+                    concurrentDownloads = settings.ItemProcess;
+                }
+            }
+            catch
+            {
+                // If there's any error reading the settings, we'll use the default value
+            }
+            return new SemaphoreSlim(concurrentDownloads, concurrentDownloads);
+        }
+
         private void InitializeDependencies(LidarrDownloaderStats stats)
         {
             try
@@ -425,9 +452,17 @@ namespace WpfApp1
             }
         }
 
+        private bool WebUIFeatureIsEnabled
+        {
+            get
+            {
+                return settings.WebUIEnabled;
+            }
+        }
+
         protected override void OnStateChanged(EventArgs e)
         {
-            if (WindowState == WindowState.Minimized && LidarrFeatureIsEnabled)
+            if (WindowState == WindowState.Minimized && (LidarrFeatureIsEnabled || WebUIFeatureIsEnabled))
             {
                 this.Hide();
                 taskbarIcon.Visibility = System.Windows.Visibility.Visible;
@@ -1128,8 +1163,8 @@ namespace WpfApp1
                 var topTracksMenuItem = CreateMenuItem("Top Tracks", ArtistTopTracks_Click, selectedItem);
                 contextMenu.Items.Add(topTracksMenuItem);
 
-                var ArtistRadioItem = CreateMenuItem("Artist Radio", ArtistRadio_Click, selectedItem);
-                contextMenu.Items.Add(ArtistRadioItem);
+                var artistRadioItem = CreateMenuItem("Artist Radio", ArtistRadio_Click, selectedItem);
+                contextMenu.Items.Add(artistRadioItem);
 
                 var similarArtistsMenuItem = CreateMenuItem("Similar Artists", SimilarArtists_Click, selectedItem);
                 contextMenu.Items.Add(similarArtistsMenuItem);
@@ -1193,12 +1228,50 @@ namespace WpfApp1
             {
                 Header = header,
                 Width = 100,
+                MinWidth = 130,
                 FontWeight = FontWeights.SemiBold,
                 DataContext = dataContext, // Set DataContext to the selected SearchResult
                 Style = (Style)FindResource("CustomContextMenuItemStyle")
             };
             menuItem.Click += clickEventHandler;
+
+            // Set icon based on the header
+            switch (header)
+            {
+                case "Download":
+                    menuItem.Icon = CreateIcon("M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z");
+                    break;
+                case "Url":
+                    menuItem.Icon = CreateIcon("M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z");
+                    break;
+                case "Top Tracks":
+                    menuItem.Icon = CreateIcon("M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6zm-2 16c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z");
+                    break;
+                case "Similar Artists":
+                    menuItem.Icon = CreateIcon("M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z");
+                    break;
+                case "Artist Radio":
+                    menuItem.Icon = CreateIcon("M3.24 6.15C2.51 6.43 2 7.17 2 8v12c0 1.1.89 2 2 2h16c1.11 0 2-.9 2-2V8c0-1.11-.89-2-2-2H8.3l8.26-3.34L15.88 1 3.24 6.15zM7 20c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-8h-2v-2h-2v2H4V8h16v4z");
+                    break;
+            }
+
+
             return menuItem;
+        }
+
+        private UIElement CreateIcon(string pathData)
+        {
+            string xaml = $@"
+            <Viewbox xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                     xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
+                     Width='16' Height='16'>
+                <Path Fill='White' Data='{pathData}' Stretch='Uniform'/>
+            </Viewbox>";
+
+            using (XmlReader xmlReader = XmlReader.Create(new StringReader(xaml)))
+            {
+                return (UIElement)XamlReader.Load(xmlReader);
+            }
         }
 
 
@@ -1657,7 +1730,7 @@ namespace WpfApp1
                 try
                 {
                     //Debug.WriteLine("Database file not found during download operation. Attempting to extract from resources.");
-                    ExtractEmbeddedResource("WpfApp1.downloads.db", dbFilePath);
+                    ExtractEmbeddedResource("BeatOn.downloads.db", dbFilePath);
                     //Debug.WriteLine("Successfully extracted database file.");
 
                     // Introduce a delay to ensure the file is completely written
@@ -2517,7 +2590,7 @@ namespace WpfApp1
                 try
                 {
                     //Debug.WriteLine("Database file not found during download operation. Attempting to extract from resources.");
-                    ExtractEmbeddedResource("WpfApp1.downloads.db", dbFilePath);
+                    ExtractEmbeddedResource("BeatOn.downloads.db", dbFilePath);
                     //Debug.WriteLine("Successfully extracted database file.");
 
                     // Introduce a delay to ensure the file is completely written
@@ -2856,7 +2929,7 @@ namespace WpfApp1
                 try
                 {
                     //Debug.WriteLine("Database file not found during download operation. Attempting to extract from resources.");
-                    ExtractEmbeddedResource("WpfApp1.downloads.db", dbFilePath);
+                    ExtractEmbeddedResource("BeatOn.downloads.db", dbFilePath);
                     //Debug.WriteLine("Successfully extracted database file.");
 
                     // Introduce a delay to ensure the file is completely written
@@ -3140,7 +3213,7 @@ namespace WpfApp1
                 try
                 {
                     //Debug.WriteLine("Database file not found during download operation. Attempting to extract from resources.");
-                    ExtractEmbeddedResource("WpfApp1.downloads.db", dbFilePath);
+                    ExtractEmbeddedResource("BeatOn.downloads.db", dbFilePath);
                     //Debug.WriteLine("Successfully extracted database file.");
 
                     // Introduce a delay to ensure the file is completely written
@@ -3286,7 +3359,7 @@ namespace WpfApp1
                 try
                 {
                     //Debug.WriteLine("Database file not found during download operation. Attempting to extract from resources.");
-                    ExtractEmbeddedResource("WpfApp1.downloads.db", dbFilePath);
+                    ExtractEmbeddedResource("BeatOn.downloads.db", dbFilePath);
                     //Debug.WriteLine("Successfully extracted database file.");
 
                     // Introduce a delay to ensure the file is completely written

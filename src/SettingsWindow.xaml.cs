@@ -7,6 +7,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
+using MessageBox = System.Windows.MessageBox;
+using WpfApp1;
 
 
 namespace WpfApp1
@@ -377,6 +379,56 @@ namespace WpfApp1
         {
             SaveCurrentSection();
         }
+
+
+        //////////QOBUZ EXTRACT CREDENTIALS CODE SECTION/////////////
+
+        private async void RetrieveQobuzCredentials_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var userId = QobuzUserIdTextBox.Text;
+                var userAuthToken = QobuzUserAuthTokenTextBox.Text;
+
+                var credentialManager = new QobuzCredentialManager();
+                (string appId, string appSecret) = await credentialManager.GetQobuzCredentials(userId, userAuthToken);
+
+                // Update the TextBox values
+                Qobuz_app_id.Text = appId;
+                Qobuz_Secrets.Text = appSecret;
+                QobuzToken.Text = userAuthToken;
+
+                // If you want to save these values, you can use the Settings like this:
+                if (int.TryParse(appId, out int appIdInt))
+                {
+                    settings.qobuz.app_id = appIdInt;
+                }
+                else
+                {
+                    // Handle the case where appId is not a valid integer
+                    MessageBox.Show("Retrieved app_id is not a valid integer.");
+                    return;
+                }
+
+                settings.qobuz.secrets = appSecret;
+                settings.qobuz.token = userAuthToken;
+                Properties.Settings.Default.Save();
+
+                MessageBox.Show("Qobuz credentials retrieved and saved successfully!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error retrieving Qobuz credentials: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
+
 
     }
 

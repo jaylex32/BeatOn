@@ -99,12 +99,20 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="4">
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="4">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Path x:Name="Icon" Data="M 2 3 Q 7 3 8 5 T 14 7 V 14 H 2 V 4 Z" Fill="White" Width="16" Height="16" />
+                                <!-- Use ViewBox to maintain aspect ratio and proper scaling -->
+                                <Viewbox Width="24" Height="24">
+                                    <Canvas Width="2048" Height="2048">
+                                        <Path x:Name="IconPart1" Fill="White" Data="M408.163 376.162h328.55c14.306 0 26.419 9.389 30.515 22.34l148.951 361.741h843.822c17.673 0 32 14.328 32 32.001v727.43c0 41.879-17.109 79.928-44.672 107.491-27.563 27.564-65.613 44.673-107.491 44.673H408.168c-41.879 0-79.928-17.11-107.491-44.673-27.564-27.563-44.673-65.612-44.673-107.49V528.325c0-41.878 17.11-79.927 44.673-107.49 27.563-27.564 65.612-44.674 107.49-44.674zm307.233 64.002H408.163c-24.213 0-46.247 9.928-62.24 25.921C329.928 482.08 320 504.113 320 528.325v991.349c0 24.212 9.928 46.247 25.921 62.24 15.994 15.994 38.028 25.922 62.241 25.922h1231.67c24.213 0 46.247-9.928 62.24-25.922 15.994-15.993 25.922-38.028 25.922-62.24v-695.43H895.52c-12.82.263-25.077-7.248-30.252-19.816l29.59-12.184-29.5 12.125L715.39 440.163z"/>
+                                        <Path x:Name="IconPart2" Fill="White" Data="M777.047 472.734h862.791c41.877 0 79.928 17.11 107.491 44.673 27.563 27.563 44.673 65.612 44.673 107.49v167.348c0 17.673-14.328 32-32 32H894.862c-14.305 0-26.419-9.39-30.515-22.34L746.986 516.88l-.098.04c-6.729-16.341 1.064-35.045 17.406-41.774a31.88 31.88 0 0 1 12.752-2.41zm862.791 64.002h-815.69l92.032 223.508H1728V624.897c0-24.212-9.928-46.247-25.921-62.24-15.993-15.993-38.03-25.922-62.24-25.922z"/>
+                                        <Path x:Name="IconPart3" Fill="White" Data="M608 1312c-17.673 0-32 14.328-32 32 0 17.674 14.327 32.002 32 32.002h832.001c17.673 0 32-14.328 32-32.001s-14.327-32.001-32-32.001H608z"/>
+                                        <Path x:Name="IconPart4" Fill="White" Data="M608 1088c-17.673 0-32 14.328-32 32 0 17.674 14.327 32.002 32 32.002h832.001c17.673 0 32-14.328 32-32.001s-14.327-32.001-32-32.001H608z"/>
+                                    </Canvas>
+                                </Viewbox>
                                 <TextBlock x:Name="ButtonText" Text="{TemplateBinding Content}" Margin="5,0,0,0" VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>
@@ -115,7 +123,10 @@
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Background" Value="White" />
                                 <Setter Property="Foreground" Value="Black" />
-                                <Setter TargetName="Icon" Property="Fill" Value="Black" />
+                                <Setter TargetName="IconPart1" Property="Fill" Value="Black" />
+                                <Setter TargetName="IconPart2" Property="Fill" Value="Black" />
+                                <Setter TargetName="IconPart3" Property="Fill" Value="Black" />
+                                <Setter TargetName="IconPart4" Property="Fill" Value="Black" />
                                 <Setter TargetName="ButtonText" Property="Foreground" Value="Black" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -348,23 +359,38 @@
             </DataGrid.Columns>
             <DataGrid.RowDetailsTemplate>
                 <DataTemplate>
-                    <ScrollViewer
-                        MaxHeight="308"
-                        HorizontalScrollBarVisibility="Disabled"
-                        VerticalScrollBarVisibility="Hidden">
-                        <!--  Set a maximum height  -->
-                        <TextBox
-                            Background="Black"
-                            BorderThickness="0"
-                            FontFamily="Segoe UI"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            Foreground="White"
-                            IsReadOnly="True"
-                            PreviewMouseLeftButtonDown="LogTextBox_PreviewMouseLeftButtonDown"
-                            Text="{Binding Log}"
-                            TextWrapping="Wrap" />
-                    </ScrollViewer>
+                    <Border 
+            Background="#FF1E1E1E" 
+            BorderBrush="#FF3E3E3E" 
+            BorderThickness="1" 
+            CornerRadius="4" 
+            Margin="5">
+                        <ScrollViewer 
+                MaxHeight="300"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Hidden">
+                            <TextBox
+                    Background="Transparent"
+                    BorderThickness="0"
+                    FontFamily="Consolas"
+                    FontSize="12"
+                    Foreground="#FFCCCCCC"
+                    IsReadOnly="True"
+                    Text="{Binding Log}"
+                    TextWrapping="Wrap"
+                    Padding="10"
+                    PreviewMouseLeftButtonDown="LogTextBox_PreviewMouseLeftButtonDown">
+                                <TextBox.Effect>
+                                    <DropShadowEffect
+                            ShadowDepth="1"
+                            Direction="330"
+                            Color="Black"
+                            Opacity="0.5"
+                            BlurRadius="1"/>
+                                </TextBox.Effect>
+                            </TextBox>
+                        </ScrollViewer>
+                    </Border>
                 </DataTemplate>
             </DataGrid.RowDetailsTemplate>
             <DataGrid.RowStyle>

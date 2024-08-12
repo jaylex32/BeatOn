@@ -27,7 +27,7 @@ namespace WpfApp1
                 if (!File.Exists(dbFilePath))
                 {
                     //Debug.WriteLine("Database file not found. Attempting to extract from resources.");
-                    ExtractEmbeddedResource("WpfApp1.downloads.db", dbFilePath);
+                    ExtractEmbeddedResource("BeatOn.downloads.db", dbFilePath);
                     //Debug.WriteLine("Successfully extracted database file.");
                 }
                 else

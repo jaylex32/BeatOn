@@ -706,13 +706,44 @@
                         <TextBox x:Name="QobuzFolderPathTextBox" Text="{Binding QobuzFolderPath}" HorizontalAlignment="Stretch" Style="{StaticResource AdvancedTextBox}" Tag="Enter Qobuz folder path..."/>
                         <Button Content="Browse" Click="QobuzBrowseButton_Click" Grid.Column="1" Margin="5,0,0,0" Style="{StaticResource FlatActionButton}" Width="85"/>
                     </Grid>
-                    <TextBlock Text="Quality" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
-                    <ComboBox Style="{StaticResource FlatComboBoxStyle}" x:Name="QobuzQualityComboBox" SelectedValue="{Binding QobuzQuality}" HorizontalAlignment="Left" Width="250">
-                        <ComboBoxItem Content="MP3  - 320 kbps" Tag="5"/>
-                        <ComboBoxItem Content="FLAC - CD, 16-bit/44.1 kHz" Tag="6"/>
-                        <ComboBoxItem Content="FLAC - HiFi, 24-bit/96 kHz" Tag="7"/>
-                        <ComboBoxItem Content="FLAC - HiFi, 24-bit/192 kHz" Tag="27"/>
-                    </ComboBox>
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Quality Section -->
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                            <TextBlock Text="Quality" FontWeight="Bold" Foreground="White" Margin="0,0,0,5"/>
+                            <ComboBox Style="{StaticResource FlatComboBoxStyle}" 
+                                     x:Name="QobuzQualityComboBox" 
+                                     SelectedValue="{Binding QobuzQuality}" 
+                                     Width="250">
+                                <ComboBoxItem Content="MP3  - 320 kbps" Tag="5"/>
+                                <ComboBoxItem Content="FLAC - CD, 16-bit/44.1 kHz" Tag="6"/>
+                                <ComboBoxItem Content="FLAC - HiFi, 24-bit/96 kHz" Tag="7"/>
+                                <ComboBoxItem Content="FLAC - HiFi, 24-bit/192 kHz" Tag="27"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Preset Section -->
+                        <StackPanel Grid.Column="1" Margin="0,0,20,0">
+                            <TextBlock Text="Presets" FontWeight="Bold" Foreground="White" Margin="0,0,0,5"/>
+                            <ComboBox x:Name="qobuzPresetComboBox" 
+                              SelectionChanged="QobuzPresetComboBox_SelectionChanged" 
+                              Style="{StaticResource FlatComboBoxStyle}" 
+                              Width="250"/>
+                        </StackPanel>
+
+                        <!-- Cover Checkbox -->
+                        <CheckBox x:Name="QobuzDownloadCoverCheckBox" 
+                          Grid.Column="2"
+                          Content="Download Covers" 
+                          IsChecked="{Binding qobuzDownloadCover, Mode=TwoWay}" 
+                          FontWeight="Bold" Foreground="White"
+                          VerticalAlignment="Center" Margin="0,20,0,0"/>
+                    </Grid>
                     <TextBlock Text="File Name Format" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -722,17 +753,24 @@
                         <TextBox x:Name="QobuzFileNameFormatTextBox" Text="{Binding saveLayout.qobuzAlbum}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Style="{StaticResource AdvancedTextBox}" Tag="Enter Qobuz file name format..." TextChanged="QobuzFileNameFormatTextBox_TextChanged"/>
                         <Button Content="Formats" Click="Qobuz_FormatOptionsButton_Click" Grid.Column="1" Margin="5,0,0,0" Style="{StaticResource FlatActionButton}" ToolTip="File Formats" Width="85"/>
                     </Grid>
+
+                    <!-- New section for User ID and User Auth Token -->
+                    <TextBlock Text="User ID" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
+                    <TextBox x:Name="QobuzUserIdTextBox" Text="{Binding qobuz.userId}" Style="{StaticResource AdvancedTextBox}" Tag="Enter Qobuz User ID..." VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+
+                    <TextBlock Text="User Auth Token" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
+                    <TextBox x:Name="QobuzUserAuthTokenTextBox" Text="{Binding qobuz.userAuthToken}" Style="{StaticResource AdvancedTextBox}" Tag="Enter Qobuz User Auth Token..." VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+
+                    <Button Content="Retrieve Qobuz Credentials" Click="RetrieveQobuzCredentials_Click" Margin="0,10,0,0" Style="{StaticResource FlatActionButton}" HorizontalAlignment="Left"/>
+                    <!-- End of new section -->
+
+                    <TextBlock Text="App_Id" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
+                    <TextBox x:Name="Qobuz_app_id" Text="{Binding qobuz.app_id}" Style="{StaticResource AdvancedTextBox}" Tag="Qobuz App ID (retrieved automatically)" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
                     <TextBlock Text="Token" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
                     <TextBox x:Name="QobuzToken" Text="{Binding qobuz.token}" VerticalAlignment="Center" Tag="Enter Qobuz Token..." Style="{StaticResource AdvancedTextBox}" HorizontalAlignment="Stretch"/>
-                    <TextBlock Text="App_Id" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
-                    <TextBox x:Name="Qobuz_app_id" Text="{Binding qobuz.app_id}" Style="{StaticResource AdvancedTextBox}" Tag="Enter Qobuz app id..." VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
                     <TextBlock Text="Secrets" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
-                    <TextBox x:Name="Qobuz_Secrets" Text="{Binding qobuz.secrets}" Style="{StaticResource AdvancedTextBox}" Tag="Enter Qobuz Secret..." VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
-                    <CheckBox x:Name="QobuzDownloadCoverCheckBox" Content="Download Covers" IsChecked="{Binding qobuzDownloadCover, Mode=TwoWay}" Foreground="White" Margin="0,10,0,0"/>
-                    <TextBlock Text="Presets" FontWeight="Bold" Foreground="White" Margin="0,10,0,5"/>
-                    <ComboBox x:Name="qobuzPresetComboBox" SelectionChanged="QobuzPresetComboBox_SelectionChanged" Style="{StaticResource FlatComboBoxStyle}" Width="250" HorizontalAlignment="Left"/>
+                    <TextBox x:Name="Qobuz_Secrets" Text="{Binding qobuz.secrets}" Style="{StaticResource AdvancedTextBox}" Tag="Qobuz App Secret (retrieved automatically)" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
                 </StackPanel>
-
                 <!-- Deezer Section -->
                 <StackPanel x:Name="DeezerSection" Visibility="Collapsed">
                     <TextBlock Text="Deezer Settings" FontSize="20" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>

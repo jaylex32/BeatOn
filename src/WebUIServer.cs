@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace WpfApp1
 {
@@ -16,14 +17,16 @@ namespace WpfApp1
     {
         private readonly LidarrDownloaderStats _stats;
         private readonly LidarrDownloader _lidarrDownloader;
+        private readonly QobuzDownloader _qobuzDownloader;
         private readonly DatabaseManager _db;
         private HttpListener _listener;
         private readonly string _url;
 
-        public WebUIServer(LidarrDownloaderStats stats, LidarrDownloader lidarrDownloader, DatabaseManager db, string url)
+        public WebUIServer(LidarrDownloaderStats stats, LidarrDownloader lidarrDownloader, QobuzDownloader qobuzDownloader, DatabaseManager db, string url)
         {
             _stats = stats;
             _lidarrDownloader = lidarrDownloader;
+            _qobuzDownloader = qobuzDownloader ?? throw new ArgumentNullException(nameof(qobuzDownloader));
             _db = db;
             _url = url.Replace("localhost", "+");
         }
@@ -49,35 +52,31 @@ namespace WpfApp1
 
         private async Task ProcessRequestAsync(HttpListenerContext context)
         {
-            string filename = context.Request.Url.AbsolutePath;
+            string path = context.Request.Url.AbsolutePath;
 
-            if (filename == "/test")
+            if (path == "/test")
             {
                 await HandleTestRequest(context);
             }
-            else if (filename == "/api/search")
+            else if (path == "/api/search")
             {
                 await HandleSearchRequest(context);
             }
-            else if (filename == "/api/download")
+            else if (path.StartsWith("/api/download"))
             {
-                await HandleDownloadRequest(context);
+                await HandleDownloadOperations(context);
             }
-            else if (filename == "/api/status")
+            else if (path == "/api/status")
             {
                 await HandleApiRequest(context);
             }
-            else if (filename == "/api/system")
+            else if (path == "/api/system")
             {
                 await HandleSystemRequest(context);
             }
-            else if (filename.StartsWith("/api/download-status"))
-            {
-                await HandleDownloadStatusRequest(context);
-            }
             else
             {
-                await HandleEmbeddedFileRequest(context, filename);
+                await HandleEmbeddedFileRequest(context, path);
             }
         }
 
@@ -95,7 +94,6 @@ namespace WpfApp1
         private async Task HandleApiRequest(HttpListenerContext context)
         {
             var response = context.Response;
-            var storageInfo = await _stats.GetStorageInfo();
             var statusData = new
             {
                 Status = "Running",
@@ -103,7 +101,7 @@ namespace WpfApp1
                 RecentDownloads = _stats.GetRecentDownloads(),
                 ActiveDownloads = _stats.GetActiveDownloads(),
                 FailedDownloads = _stats.GetFailedDownloads(),
-                StorageInfo = storageInfo
+                StorageInfo = await _stats.GetStorageInfo()
             };
 
             string jsonResponse = System.Text.Json.JsonSerializer.Serialize(statusData);
@@ -121,36 +119,90 @@ namespace WpfApp1
                 using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
                 {
                     string requestBody = await reader.ReadToEndAsync().ConfigureAwait(false);
+                    //Debug.WriteLine($"Received search request: {requestBody}");
+
                     var searchRequest = JsonConvert.DeserializeObject<SearchRequest>(requestBody);
 
-                    var searchResults = await _lidarrDownloader.SearchOnDeezer(searchRequest.SearchTerm, searchRequest.SearchType).ConfigureAwait(false);
+                    if (searchRequest == null)
+                    {
+                        throw new ArgumentNullException(nameof(searchRequest), "Search request could not be deserialized.");
+                    }
+
+                    //Debug.WriteLine($"Searching for {searchRequest.SearchTerm} in {searchRequest.SearchType} using {searchRequest.Service}");
+
+                    List<JObject> searchResults;
+                    if (searchRequest.Service == "qobuz")
+                    {
+                        if (_qobuzDownloader == null)
+                        {
+                            throw new InvalidOperationException("QobuzDownloader is not initialized.");
+                        }
+                        searchResults = await _qobuzDownloader.SearchOnQobuz(searchRequest.SearchTerm, searchRequest.SearchType).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        if (_lidarrDownloader == null)
+                        {
+                            throw new InvalidOperationException("LidarrDownloader is not initialized.");
+                        }
+                        searchResults = await _lidarrDownloader.SearchOnDeezer(searchRequest.SearchTerm, searchRequest.SearchType).ConfigureAwait(false);
+                    }
+
+                    if (searchResults == null)
+                    {
+                        throw new InvalidOperationException("Search results are null.");
+                    }
+
+                    //Debug.WriteLine($"Search completed. Found {searchResults.Count} results.");
 
                     var results = searchResults.Select(result => new
                     {
                         artistName = result["artist"]?["name"]?.ToString() ?? "Unknown Artist",
                         title = result["title"]?.ToString() ?? "Unknown Title",
                         link = result["link"]?.ToString() ?? "No Link",
-                        cover = result["cover_medium"]?.ToString() // Ensure cover image is included
+                        cover = result["cover_medium"]?.ToString()
                     }).ToList();
 
-                    var jsonResponse = Newtonsoft.Json.JsonConvert.SerializeObject(results);
-                    byte[] buffer = Encoding.UTF8.GetBytes(jsonResponse);
-                    context.Response.ContentLength64 = buffer.Length;
-                    context.Response.ContentType = "application/json";
-                    await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                    await SendJsonResponse(context.Response, new { Success = true, Results = results });
                 }
             }
             catch (Exception ex)
             {
+                //Debug.WriteLine($"Error in HandleSearchRequest: {ex}");
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                byte[] buffer = Encoding.UTF8.GetBytes(ex.Message);
-                context.Response.ContentLength64 = buffer.Length;
-                context.Response.ContentType = "text/plain";
-                await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                await SendJsonResponse(context.Response, new { Success = false, Error = ex.Message, Stack = ex.StackTrace });
             }
-            finally
+        }
+        private async Task HandleDownloadOperations(HttpListenerContext context)
+        {
+            var request = context.Request;
+            var response = context.Response;
+
+            if (request.HttpMethod == "POST")
             {
-                context.Response.OutputStream.Close();
+                await HandleDownloadRequest(context);
+            }
+            else if (request.HttpMethod == "GET")
+            {
+                string path = request.Url.AbsolutePath;
+                if (path.EndsWith("/download-progress"))
+                {
+                    await HandleDownloadProgressRequest(context);
+                }
+                else if (path.EndsWith("/download-status"))
+                {
+                    await HandleDownloadStatusRequest(context);
+                }
+                else
+                {
+                    response.StatusCode = (int)HttpStatusCode.BadRequest;
+                    await SendJsonResponse(response, new { Error = "Invalid operation" });
+                }
+            }
+            else
+            {
+                response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+                await SendJsonResponse(response, new { Error = "Method not allowed" });
             }
         }
 
@@ -161,29 +213,40 @@ namespace WpfApp1
                 using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
                 {
                     string requestBody = await reader.ReadToEndAsync().ConfigureAwait(false);
+                    //Debug.WriteLine($"Received download request: {requestBody}");
+
                     var downloadRequest = JsonConvert.DeserializeObject<DownloadRequest>(requestBody);
 
-                    bool success = await _lidarrDownloader.StartDownloadFromDeezerUsingSettingsPath(downloadRequest.AlbumUrl, downloadRequest.AlbumName, downloadRequest.ArtistName).ConfigureAwait(false);
+                    //Debug.WriteLine($"Attempting to download {downloadRequest.AlbumName} by {downloadRequest.ArtistName} from {downloadRequest.Service}");
 
-                    var response = new { Success = success };
-                    var jsonResponse = Newtonsoft.Json.JsonConvert.SerializeObject(response);
-                    byte[] buffer = Encoding.UTF8.GetBytes(jsonResponse);
-                    context.Response.ContentLength64 = buffer.Length;
-                    context.Response.ContentType = "application/json";
-                    await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                    bool success;
+                    if (downloadRequest.Service == "qobuz")
+                    {
+                        success = await _qobuzDownloader.StartDownloadFromQobuzUsingSettingsPath(
+                            downloadRequest.AlbumUrl,
+                            downloadRequest.AlbumName,
+                            downloadRequest.ArtistName
+                        ).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        success = await _lidarrDownloader.StartDownloadFromDeezerUsingSettingsPath(
+                            downloadRequest.AlbumUrl,
+                            downloadRequest.AlbumName,
+                            downloadRequest.ArtistName
+                        ).ConfigureAwait(false);
+                    }
+
+                    //Debug.WriteLine($"Download success: {success}");
+
+                    await SendJsonResponse(context.Response, new { Success = success });
                 }
             }
             catch (Exception ex)
             {
+                //Debug.WriteLine($"Error in HandleDownloadRequest: {ex}");
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                byte[] buffer = Encoding.UTF8.GetBytes(ex.Message);
-                context.Response.ContentLength64 = buffer.Length;
-                context.Response.ContentType = "text/plain";
-                await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-            }
-            finally
-            {
-                context.Response.OutputStream.Close();
+                await SendJsonResponse(context.Response, new { Error = ex.Message, Stack = ex.StackTrace });
             }
         }
 
@@ -196,25 +259,88 @@ namespace WpfApp1
             var downloadItem = _db.GetDownloadItem(albumName, artistName);
             var statusData = new
             {
-                Status = downloadItem?.Status ?? "Unknown"
+                Status = downloadItem?.Status ?? "Unknown",
+                Progress = GetDownloadProgress(new DownloadInfo { AlbumName = albumName, ArtistName = artistName })
             };
 
-            string jsonResponse = System.Text.Json.JsonSerializer.Serialize(statusData);
+            await SendJsonResponse(context.Response, statusData);
+        }
+
+        private async Task HandleDownloadProgressRequest(HttpListenerContext context)
+        {
+            var response = context.Response;
+            var activeDownloads = _lidarrDownloader.GetActiveDownloads();
+            var progressData = activeDownloads.Select(download => new
+            {
+                artistName = download.ArtistName,
+                albumName = download.AlbumName,
+                status = download.Status.ToLower(),
+                progress = download.Progress
+            }).ToList();
+
+            string jsonResponse = System.Text.Json.JsonSerializer.Serialize(progressData);
             byte[] buffer = Encoding.UTF8.GetBytes(jsonResponse);
-            context.Response.ContentLength64 = buffer.Length;
-            context.Response.ContentType = "application/json";
-            await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-            context.Response.OutputStream.Close();
+            response.ContentLength64 = buffer.Length;
+            response.ContentType = "application/json";
+            await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+            response.Close();
+        }
+
+        private int GetDownloadProgress(DownloadInfo download)
+        {
+            var downloadItem = _db.GetDownloadItem(download.AlbumName, download.ArtistName);
+            if (downloadItem == null)
+            {
+                return 0;
+            }
+
+            switch (downloadItem.Status)
+            {
+                case "Completed":
+                    return 100;
+                case "Waiting":
+                    return 0;
+                case "In progress":
+                    // Estimate progress based on time elapsed
+                    var elapsedTime = (DateTime.Now - downloadItem.StartTime).TotalSeconds;
+                    var estimatedTotalTime = 300; // Assume 5 minutes for a download
+                    var estimatedProgress = (int)Math.Min(99, (elapsedTime / estimatedTotalTime) * 100);
+                    return estimatedProgress;
+                case "Error":
+                case "Failed":
+                    return 0;
+                default:
+                    return 0;
+            }
         }
 
         private async Task HandleEmbeddedFileRequest(HttpListenerContext context, string filename)
         {
             var response = context.Response;
-            string resourcePath = $"BeatOn.wwwroot{filename.Replace('/', '.')}";
+            string resourcePath;
 
             if (filename == "/")
             {
+                resourcePath = "BeatOn.wwwroot.search.html";
+            }
+            else if (filename == "/search")
+            {
+                resourcePath = "BeatOn.wwwroot.search.html";
+            }
+            else if (filename == "/downloads")
+            {
                 resourcePath = "BeatOn.wwwroot.index.html";
+            }
+            else
+            {
+                // Remove leading slash and replace remaining slashes with dots
+                resourcePath = $"BeatOn.wwwroot{filename.TrimStart('/').Replace('/', '.')}";
+
+                // If no file extension is provided, assume .html
+                if (!Path.HasExtension(resourcePath))
+                {
+                    resourcePath += ".html";
+                }
             }
 
             using (Stream resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourcePath))
@@ -238,7 +364,6 @@ namespace WpfApp1
 
         private async Task HandleSystemRequest(HttpListenerContext context)
         {
-            var response = context.Response;
             var systemStats = new SystemUsageStats();
             var systemData = new
             {
@@ -247,7 +372,12 @@ namespace WpfApp1
                 TotalMemory = systemStats.GetTotalMemory()
             };
 
-            string jsonResponse = System.Text.Json.JsonSerializer.Serialize(systemData);
+            await SendJsonResponse(context.Response, systemData);
+        }
+
+        private async Task SendJsonResponse(HttpListenerResponse response, object data)
+        {
+            string jsonResponse = System.Text.Json.JsonSerializer.Serialize(data);
             byte[] buffer = Encoding.UTF8.GetBytes(jsonResponse);
             response.ContentLength64 = buffer.Length;
             response.ContentType = "application/json";
@@ -271,6 +401,7 @@ namespace WpfApp1
         {
             public string SearchTerm { get; set; }
             public string SearchType { get; set; }
+            public string Service { get; set; }
         }
 
         public class DownloadRequest
@@ -279,6 +410,7 @@ namespace WpfApp1
             public string AlbumName { get; set; }
             public string ArtistName { get; set; }
             public string LidarrRootPath { get; set; }
+            public string Service { get; set; }
         }
     }
 }

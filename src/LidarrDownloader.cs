@@ -542,8 +542,7 @@ public class LidarrDownloader
                         else if (outputMessage.Contains("ℹ info") && outputMessage.Contains("(") && outputMessage.Contains("/"))
                         {
                             int currentIndex = 0;
-                            totalCount = 0;
-
+                            int totalCount = 0;
                             int startIndex = outputMessage.IndexOf("(") + 1;
                             int endIndex = outputMessage.IndexOf("/");
                             if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex)
@@ -554,7 +553,20 @@ public class LidarrDownloader
                                 {
                                     double progressPercentage = (double)currentIndex / totalCount;
                                     int progressInt = (int)(progressPercentage * 100);
-                                    downloadManagerControl.UpdateDownloadItemProgress(downloadItem, currentIndex, totalCount);
+                                    downloadItem.Progress = progressInt;
+                                    downloadItem.Status = progressInt == 100 ? "Completed" : "In progress";
+
+                                    await dispatcher.InvokeAsync(() => {
+                                        downloadManagerControl.UpdateDownloadItemProgress(downloadItem, currentIndex, totalCount);
+                                    });
+
+                                    db.UpdateDownloadItem(downloadItem);
+                                    _stats.UpdateDownloadProgress(downloadItem.ArtistName, downloadItem.Name, progressInt);
+
+                                    if (progressInt == 100)
+                                    {
+                                        await HandleDownloadCompletion(downloadItem);
+                                    }
                                 }
                             }
                         }
@@ -972,7 +984,46 @@ public class LidarrDownloader
         }
     }
 
+    public int GetDownloadProgress(string albumName, string artistName)
+    {
+        var downloadItem = downloadManagerControl.DownloadItems.FirstOrDefault(item =>
+            item.Name == albumName && item.ArtistName == artistName);
 
+        if (downloadItem == null)
+        {
+            return 0;
+        }
+
+        switch (downloadItem.Status)
+        {
+            case "Completed":
+                return 100;
+            case "Waiting":
+                return 0;
+            case "In progress":
+                return downloadItem.Progress;
+            case "Error":
+            case "Failed":
+                return 0;
+            default:
+                return 0;
+        }
+    }
+
+    private async Task HandleDownloadCompletion(DownloadItem downloadItem)
+    {
+        downloadItem.EndTime = DateTime.Now;
+        downloadItem.Status = "Completed";
+
+        await dispatcher.InvokeAsync(() => {
+            downloadManagerControl.UpdateDownloadItemProgress(downloadItem, downloadItem.Progress, 100);
+        });
+
+        db.UpdateDownloadItem(downloadItem);
+        _stats.AddDownload(downloadItem.ArtistName, downloadItem.Name, "Completed");
+
+        await NotifyLidarrForImport(downloadItem.AlbumDownloadPath);
+    }
 
     //---------------------------------//DEEZER WEB UI DOWNLOAD CODE//------------------------------------------//
 
@@ -1007,7 +1058,7 @@ public class LidarrDownloader
                     else if (searchType == "track")
                     {
                         result["artist"] = new JObject { ["name"] = item.artist.name };
-                        result["title"] = $"{item.album.title}: {item.title}";
+                        result["title"] = $"{item.title}";
                         result["link"] = item.link;
                         result["cover_medium"] = item.album.cover_medium;
                     }
