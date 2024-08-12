@@ -14,32 +14,30 @@ public class DeezerArlScraper
         {
             string content = await httpClient.GetStringAsync(Url);
 
-            // Split the content into lines
-            string[] lines = content.Split('\n');
+            // Find the start of the Deezer ARLs section
+            int startIndex = content.IndexOf("<h3 id=\"deezer-arls\">Deezer ARLs");
+            if (startIndex == -1) return new List<string>();
 
-            // Initialize variables to keep track of the state
-            bool inDeezerSection = false;
+            // Find the start of the table
+            startIndex = content.IndexOf("<table class=\"ntable\">", startIndex);
+            if (startIndex == -1) return new List<string>();
+
+            // Find the end of the table
+            int endIndex = content.IndexOf("</table>", startIndex);
+            if (endIndex == -1) return new List<string>();
+
+            // Extract the table content
+            string tableContent = content.Substring(startIndex, endIndex - startIndex);
+
+            // Use regex to find all ARL codes
+            var matches = Regex.Matches(tableContent, "<td style=\"text-align: left\"><code>(.*?)</code></td>");
+
             List<string> arls = new List<string>();
-
-            // Iterate through the lines and extract the required information based on the pattern
-            foreach (string line in lines)
+            foreach (Match match in matches)
             {
-                if (line.Contains("id=\"deezer-arls\">Deezer ARLs"))
+                if (match.Groups.Count > 1)
                 {
-                    inDeezerSection = true;
-                }
-                if (line.Contains("id=\"qobuz-arls\">Qobuz ARLs"))
-                {
-                    inDeezerSection = false;
-                    break;
-                }
-                if (inDeezerSection)
-                {
-                    if (line.Contains("<td><code>") && line.Contains("</code></td>"))
-                    {
-                        string code = Regex.Match(line, "<td><code>(.*?)</code></td>").Groups[1].Value;
-                        arls.Add(code);
-                    }
+                    arls.Add(match.Groups[1].Value);
                 }
             }
 
