@@ -44,7 +44,7 @@ BeatOn is the ultimate GUI for D-Fi, designed to enhance your download experienc
 ## Tutorials
 
 ### Download with URLs
-![Download with Urls](./assets/downloads_with_urls.mkv)
+![Download with Urls](./assets/downloads_with_urls.gif)
 
 ### Artist Right-Click Context Menu
 <img src="./assets/artist_right_click_context_menu.png" alt="Artist Right Click Context Menu" width="400"/>
@@ -61,7 +61,7 @@ Special thanks to firehawk52 for providing the ARLs used in this application. Vi
 
 ## License
 
-[Add license information here]
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 
 ---
