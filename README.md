@@ -15,10 +15,10 @@ BeatOn is the ultimate GUI for D-Fi, designed to enhance your download experienc
 
 <table>
   <tr>
-    <td><img src="./assets/Albums.png" alt="Main" width="400"/></td>
+    <td><img src="./assets/BeatOn_Home.png" alt="Main" width="400"/></td>
   </tr>
   <tr>
-    <td><img src="./assets/Settings.png" alt="Settings" width="400"/></td>
+    <td><img src="./assets/BeatOn_Settings.png" alt="Settings" width="400"/></td>
   </tr>
 </table>
 
@@ -34,11 +34,6 @@ BeatOn is the ultimate GUI for D-Fi, designed to enhance your download experienc
     <td><img src="./assets/Settings_BeatOn_Webui.png" alt="Web UI Settings" width="400"/></td>
   </tr>
 </table>
-
-## Tutorials
-
-### Download with URLs
-![Download with Urls](./assets/downloads_with_urls.gif)
 
 
 ## License
